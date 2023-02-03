@@ -66,8 +66,9 @@ def pointing_correction(tile, i):
     print('correcting pointing on tile {} {} pair {}...'.format(x, y, i))
     method = 'relative' if cfg['relative_sift_match_thresh'] is True else 'absolute'
     A, m = pointing_accuracy.compute_correction(
-        img1, img2, rpc1, rpc2, x, y, w, h, method,
-        cfg['sift_match_thresh'], cfg['max_pointing_error']
+        cfg, img1, img2, rpc1, rpc2, x, y, w, h, method,
+        cfg['sift_match_thresh'], cfg['max_pointing_error'],
+        cfg['n_gcp_per_axis']
     )
 
     if A is not None:  # A is the correction matrix
@@ -147,7 +148,7 @@ def rectification_pair(tile, i):
 
     rect1 = os.path.join(out_dir, 'rectified_ref.tif')
     rect2 = os.path.join(out_dir, 'rectified_sec.tif')
-    H1, H2, disp_min, disp_max = rectification.rectify_pair(img1, img2,
+    H1, H2, disp_min, disp_max = rectification.rectify_pair(cfg, img1, img2,
                                                             rpc1, rpc2,
                                                             x, y, w, h,
                                                             rect1, rect2, A, m,
@@ -228,11 +229,11 @@ def stereo_matching(tile, i):
 
     try:
         # block_matching might fail (due to timeout)
-        block_matching.compute_disparity_map(rect1, rect2, disp, mask,
+        block_matching.compute_disparity_map(cfg, rect1, rect2, disp, mask,
                                              cfg['matching_algorithm'], disp_min,
                                              disp_max, timeout=cfg['mgm_timeout'],
                                              max_disp_range=cfg['max_disp_range'])
-    
+
         # add margin around masked pixels
         masking.erosion(mask, mask, cfg['msk_erosion'])
     except Exception as e:
@@ -370,7 +371,7 @@ def disparity_to_ply(tile):
     valid_out = np.sum(np.all(np.isfinite(xyz_array.reshape(-1, 3)), axis=1))
     if valid_out < valid_in//10:
         print("WARNING triangulation.filter_xyz with params ", (r, n, cfg['gsd']), " has conserved only {} out of {}".format(valid_out, valid_in))
-        # TODO: do something to log this issue in a central log not in the distributed one... 
+        # TODO: do something to log this issue in a central log not in the distributed one...
 
 
     proj_com = "CRS {}".format(cfg['out_crs'])
@@ -445,7 +446,7 @@ def heights_fusion(tile):
     # merge the height maps (applying mean offset to register)
     fusion.merge_n(os.path.join(tile_dir, 'height_map.tif'), height_maps,
                    global_mean_heights, averaging=cfg['fusion_operator'],
-                   threshold=cfg['fusion_thresh'])
+                   threshold=cfg['fusion_thresh'], debug=cfg['debug'])
 
     if cfg['clean_intermediate']:
         for f in height_maps:
@@ -512,7 +513,7 @@ def plys_to_dsm(tile):
     if os.path.exists(in_ply) is False:
         # TODO: take note of the missing part of the DSM
         print('ERROR: plys_to_dsm missing input file: ${in_ply}')
-        return 
+        return
 
     # compute the point cloud x, y bounds
     points, _ = ply.read_3d_point_cloud_from_ply(in_ply)
@@ -661,7 +662,7 @@ def main(user_cfg, start_from=0):
         parallel.launch_calls(rectification_pair, tiles_pairs, nb_workers,
                               timeout=timeout)
 
-    # disparity range reasoning step: (WIP) 
+    # disparity range reasoning step: (WIP)
     if start_from <= 4:
         print('4) reason about the disparity ranges... (WIP)')
         # extra step checking the disparity range

@@ -9,7 +9,6 @@ import rasterio
 from scipy import ndimage
 
 from s2p import common
-from s2p.config import cfg
 
 
 class MaxDisparityRangeError(Exception):
@@ -51,7 +50,7 @@ def create_rejection_mask(disp, im1, im2, mask):
 
 
 
-def compute_disparity_map(im1, im2, disp, mask, algo, disp_min=None,
+def compute_disparity_map(cfg, im1, im2, disp, mask, algo, disp_min=None,
                           disp_max=None, timeout=600, max_disp_range=None,
                           extra_params=''):
     """
