@@ -23,6 +23,7 @@ import sys
 import os.path
 import json
 import datetime
+from typing import List
 import multiprocessing
 multiprocessing.set_start_method('fork')  # needed after python3.8 for multi-platform consistency
 
@@ -45,18 +46,19 @@ from s2p import ply
 from s2p import triangulation
 from s2p import fusion
 from s2p import visualisation
+from s2p.tile import Tile
 
 
-def pointing_correction(tile, i):
+def pointing_correction(tile: Tile, i):
     """
     Compute the translation that corrects the pointing error on a pair of tiles.
 
     Args:
-        tile: dictionary containing the information needed to process the tile
+        tile: Tile containing the information needed to process the tile
         i: index of the processed pair
     """
-    x, y, w, h = tile['coordinates']
-    out_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
+    x, y, w, h = tile.coordinates
+    out_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
     img1 = cfg['images'][0]['img']
     rpc1 = cfg['images'][0]['rpcm']
     img2 = cfg['images'][i]['img']
@@ -84,16 +86,16 @@ def pointing_correction(tile, i):
                                        x, y, w, h)
 
 
-def global_pointing_correction(tiles):
+def global_pointing_correction(tiles: List[Tile]) -> None:
     """
     Compute the global pointing corrections for each pair of images.
 
     Args:
-        tiles: list of tile dictionaries
+        tiles: list of tiles
     """
     for i in range(1, len(cfg['images'])):
         out = os.path.join(cfg['out_dir'], 'global_pointing_pair_%d.txt' % i)
-        l = [os.path.join(t['dir'], 'pair_%d' % i) for t in tiles]
+        l = [os.path.join(t.dir, 'pair_%d' % i) for t in tiles]
         np.savetxt(out, pointing_accuracy.global_from_local(l),
                    fmt='%12.6f')
         if cfg['clean_intermediate']:
@@ -101,16 +103,16 @@ def global_pointing_correction(tiles):
                 common.remove(os.path.join(d, 'center_keypts_sec.txt'))
 
 
-def rectification_pair(tile, i):
+def rectification_pair(tile: Tile, i: int) -> None:
     """
     Rectify a pair of images on a given tile.
 
     Args:
-        tile: dictionary containing the information needed to process a tile.
+        tile: Tile containing the information needed to process a tile.
         i: index of the processed pair
     """
-    out_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
-    x, y, w, h = tile['coordinates']
+    out_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
+    x, y, w, h = tile.coordinates
     img1 = cfg['images'][0]['img']
     rpc1 = cfg['images'][0]['rpcm']
     img2 = cfg['images'][i]['img']
@@ -128,9 +130,9 @@ def rectification_pair(tile, i):
     except IOError:
         m = None
 
-    cur_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
-    for n in tile['neighborhood_dirs']:
-        nei_dir = os.path.join(tile['dir'], n, 'pair_{}'.format(i))
+    cur_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
+    for n in tile.neighborhood_dirs:
+        nei_dir = os.path.join(tile.dir, n, 'pair_{}'.format(i))
         if os.path.exists(nei_dir) and not os.path.samefile(cur_dir, nei_dir):
             sift_from_neighborhood = os.path.join(nei_dir, 'sift_matches.txt')
             try:
@@ -166,9 +168,7 @@ def rectification_pair(tile, i):
 #        common.remove(os.path.join(out_dir, 'sift_matches.txt'))
 
 
-
-
-def disparity_range_check(tile, i):
+def disparity_range_check(tile: Tile, i: int):
     """
     Reason about the estimated disparity ranges for all the tiles and update them if needed
 
@@ -176,8 +176,8 @@ def disparity_range_check(tile, i):
         tile: dictionary containing the information needed to process a tile.
         i: index of the processed pair
     """
-    out_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
-    x, y, w, h = tile['coordinates']
+    out_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
+    x, y, w, h = tile.coordinates
     img1 = cfg['images'][0]['img']
     rpc1 = cfg['images'][0]['rpcm']
     img2 = cfg['images'][i]['img']
@@ -200,8 +200,8 @@ def disparity_range_check(tile, i):
     print('checking tile {} {} pair {}...'.format(x, y, i))
     print(disp_min, disp_max)
 
-    for n in tile['neighborhood_dirs']:
-        nei_dir = os.path.join(tile['dir'], n, 'pair_{}'.format(i))
+    for n in tile.neighborhood_dirs:
+        nei_dir = os.path.join(tile.dir, n, 'pair_{}'.format(i))
         if os.path.exists(nei_dir) and not os.path.samefile(out_dir, nei_dir):
             sift_from_neighborhood = os.path.join(nei_dir, 'sift_matches.txt')
             dmin_dmax_from_neighborhood = os.path.join(nei_dir, 'disp_min_max.txt')
@@ -209,16 +209,16 @@ def disparity_range_check(tile, i):
 
 
 
-def stereo_matching(tile, i):
+def stereo_matching(tile: Tile, i: int) -> None:
     """
     Compute the disparity of a pair of images on a given tile.
 
     Args:
-        tile: dictionary containing the information needed to process a tile.
+        tile: Tile containing the information needed to process a tile.
         i: index of the processed pair
     """
-    out_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
-    x, y = tile['coordinates'][:2]
+    out_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
+    x, y = tile.coordinates[:2]
 
     print('estimating disparity on tile {} {} pair {}...'.format(x, y, i))
     rect1 = os.path.join(out_dir, 'rectified_ref.tif')
@@ -250,16 +250,16 @@ def stereo_matching(tile, i):
 #        common.remove(os.path.join(out_dir, 'disp_min_max.txt'))
 
 
-def disparity_to_height(tile, i):
+def disparity_to_height(tile: Tile, i: int) -> None:
     """
     Compute a height map from the disparity map of a pair of image tiles.
 
     Args:
-        tile: dictionary containing the information needed to process a tile.
+        tile: Tile containing the information needed to process a tile.
         i: index of the processed pair.
     """
-    out_dir = os.path.join(tile['dir'], 'pair_{}'.format(i))
-    x, y, w, h = tile['coordinates']
+    out_dir = os.path.join(tile.dir, 'pair_{}'.format(i))
+    x, y, w, h = tile.coordinates
 
     print('triangulating tile {} {} pair {}...'.format(x, y, i))
     rpc1 = cfg['images'][0]['rpcm']
@@ -268,7 +268,7 @@ def disparity_to_height(tile, i):
     H_sec = np.loadtxt(os.path.join(out_dir, 'H_sec.txt'))
     disp = os.path.join(out_dir, 'rectified_disp.tif')
     mask = os.path.join(out_dir, 'rectified_mask.png')
-    mask_orig = os.path.join(tile['dir'], 'mask.png')
+    mask_orig = os.path.join(tile.dir, 'mask.png')
     pointing = os.path.join(cfg['out_dir'],
                             'global_pointing_pair_{}.txt'.format(i))
 
@@ -293,7 +293,7 @@ def disparity_to_height(tile, i):
         common.remove(mask)
 
 
-def disparity_to_ply(tile):
+def disparity_to_ply(tile: Tile) -> None:
     """
     Compute a point cloud from the disparity map of a pair of image tiles.
 
@@ -301,11 +301,11 @@ def disparity_to_ply(tile):
     three).
 
     Args:
-        tile: dictionary containing the information needed to process a tile.
+        tile: Tile containing the information needed to process a tile.
     """
-    out_dir = tile['dir']
+    out_dir = tile.dir
     ply_file = os.path.join(out_dir, 'cloud.ply')
-    x, y, w, h = tile['coordinates']
+    x, y, w, h = tile.coordinates
     rpc1 = cfg['images'][0]['rpcm']
     rpc2 = cfg['images'][1]['rpcm']
 
@@ -386,15 +386,13 @@ def disparity_to_ply(tile):
         common.remove(os.path.join(out_dir, 'pair_1', 'rectified_ref.tif'))
 
 
-def mean_heights(tile):
-    """
-    """
-    w, h = tile['coordinates'][2:]
+def mean_heights(tile: Tile) -> None:
+    w, h = tile.coordinates[2:]
     n = len(cfg['images']) - 1
     maps = np.empty((h, w, n))
     for i in range(n):
         try:
-            with rasterio.open(os.path.join(tile['dir'], 'pair_{}'.format(i + 1),
+            with rasterio.open(os.path.join(tile.dir, 'pair_{}'.format(i + 1),
                                             'height_map.tif'), 'r') as f:
                 maps[:, :, i] = f.read(1)
         except RuntimeError:  # the file is not there
@@ -404,14 +402,12 @@ def mean_heights(tile):
     validity_mask += 1 - validity_mask  # 1 on valid pixels, and nan on invalid
 
     # save the n mean height values to a txt file in the tile directory
-    np.savetxt(os.path.join(tile['dir'], 'local_mean_heights.txt'),
+    np.savetxt(os.path.join(tile.dir, 'local_mean_heights.txt'),
                [np.nanmean(validity_mask * maps[:, :, i]) for i in range(n)])
 
 
-def global_mean_heights(tiles):
-    """
-    """
-    local_mean_heights = [np.loadtxt(os.path.join(t['dir'], 'local_mean_heights.txt'))
+def global_mean_heights(tiles: List[Tile]) -> None:
+    local_mean_heights = [np.loadtxt(os.path.join(t.dir, 'local_mean_heights.txt'))
                           for t in tiles]
     global_mean_heights = np.nanmean(local_mean_heights, axis=0)
     for i in range(len(cfg['images']) - 1):
@@ -420,14 +416,14 @@ def global_mean_heights(tiles):
                    [global_mean_heights[i]])
 
 
-def heights_fusion(tile):
+def heights_fusion(tile: Tile) -> None:
     """
     Merge the height maps computed for each image pair and generate a ply cloud.
 
     Args:
-        tile: a dictionary that provides all you need to process a tile
+        tile: Tile that provides all you need to process a tile
     """
-    tile_dir = tile['dir']
+    tile_dir = tile.dir
     height_maps = [os.path.join(tile_dir, 'pair_%d' % (i + 1), 'height_map.tif')
                    for i in range(len(cfg['images']) - 1)]
 
@@ -453,19 +449,19 @@ def heights_fusion(tile):
             common.remove(f)
 
 
-def heights_to_ply(tile):
+def heights_to_ply(tile: Tile) -> None:
     """
     Generate a ply cloud.
 
     Args:
-        tile: a dictionary that provides all you need to process a tile
+        tile: a Tile that provides all you need to process a tile
     """
     # merge the n-1 height maps of the tile (n = nb of images)
     heights_fusion(tile)
 
     # compute a ply from the merged height map
-    out_dir = tile['dir']
-    x, y, w, h = tile['coordinates']
+    out_dir = tile.dir
+    x, y, w, h = tile.coordinates
     plyfile = os.path.join(out_dir, 'cloud.ply')
     height_map = os.path.join(out_dir, 'height_map.tif')
 
@@ -497,18 +493,18 @@ def heights_to_ply(tile):
         common.remove(os.path.join(out_dir, 'mask.png'))
 
 
-def plys_to_dsm(tile):
+def plys_to_dsm(tile: Tile) -> None:
     """
     Generates DSM from plyfiles (cloud.ply)
 
     Args:
         tile: a dictionary that provides all you need to process a tile
     """
-    out_dsm = os.path.join(tile['dir'], 'dsm.tif')
-    out_conf = os.path.join(tile['dir'], 'confidence.tif')
+    out_dsm = os.path.join(tile.dir, 'dsm.tif')
+    out_conf = os.path.join(tile.dir, 'confidence.tif')
     r = cfg['dsm_resolution']
 
-    in_ply = os.path.join(tile['dir'],'cloud.ply')
+    in_ply = os.path.join(tile.dir, 'cloud.ply')
     # first check if ply exists (it might not exist because of a failed blockmatching)
     if os.path.exists(in_ply) is False:
         # TODO: take note of the missing part of the DSM
@@ -517,7 +513,6 @@ def plys_to_dsm(tile):
 
     # compute the point cloud x, y bounds
     points, _ = ply.read_3d_point_cloud_from_ply(in_ply)
-
     if len(points) == 0:
         # TODO: take note of the missing part of the DSM
         print('ERROR: plys_to_dsm no points in file: ${in_ply}')
@@ -537,8 +532,8 @@ def plys_to_dsm(tile):
 
     # since some tiles might have failed we test for the neighborhood tiles before feeding them to merge
     clouds = []
-    for n_dir in tile['neighborhood_dirs']:
-        nply = os.path.join(tile['dir'], n_dir, 'cloud.ply')
+    for n_dir in tile.neighborhood_dirs:
+        nply = os.path.join(tile.dir, n_dir, 'cloud.ply')
         if os.path.exists(nply):
             clouds.append(nply)
     raster, profile = plyflatten_from_plyfiles_list(clouds,
@@ -558,7 +553,7 @@ def plys_to_dsm(tile):
         common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
 
 
-def global_dsm(tiles):
+def global_dsm(tiles: List[Tile]) -> None:
     """
     Merge tilewise DSMs and confidence maps in a global DSM and confidence map.
     """
@@ -579,12 +574,11 @@ def global_dsm(tiles):
     confidence_maps = []
 
     for t in tiles:
-
-        d = os.path.join(t["dir"], "dsm.tif")
+        d = os.path.join(t.dir, "dsm.tif")
         if os.path.exists(d):
             dsms.append(d)
 
-        c = os.path.join(t["dir"], "confidence.tif")
+        c = os.path.join(t.dir, "confidence.tif")
         if os.path.exists(c):
             confidence_maps.append(c)
 
@@ -638,7 +632,7 @@ def main(user_cfg, start_from=0):
         # initialisation: write the list of tilewise json files to outdir/tiles.txt
         with open(tiles_txt, 'w') as f:
             for t in tiles:
-                print(t['json'], file=f)
+                print(t.json, file=f)
 
     n = len(cfg['images'])
     tiles_pairs = [(t, i) for i in range(1, n) for t in tiles]
