@@ -182,6 +182,7 @@ def disparity_range(cfg, rpc1, rpc2, x, y, w, h, H1, H2, matches, A=None):
         disp: 2-uple containing the horizontal disparity range
     """
     # compute exogenous disparity range if needed
+    exogenous_disp = None
     if cfg['exogenous_dem'] and cfg['disp_range_method'] in ['exogenous', 'wider_sift_exogenous']:
         exogenous_disp = rpc_utils.exogenous_disp_range_estimation(cfg, rpc1, rpc2,
                                                                    x, y, w, h,

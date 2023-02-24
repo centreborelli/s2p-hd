@@ -4,6 +4,7 @@
 # Copyright (C) 2015, Julien Michel <julien.michel@cnes.fr>
 
 import os
+import tempfile
 import numpy as np
 import rasterio
 from scipy import ndimage
@@ -31,7 +32,7 @@ def create_rejection_mask(disp, im1, im2, mask):
 #    common.run(["plambda", disp, "x 0 join", "-o", tmp1])
 #    common.run(["backflow", tmp1, im2, tmp2])
 #    common.run(["plambda", disp, im1, tmp2, "x isfinite y isfinite z isfinite and and vmul", "-o", mask])
-#### 
+####
 
     im1 = common.rio_read_as_array_with_nans(im1)
     im2 = common.rio_read_as_array_with_nans(im2)
@@ -46,8 +47,6 @@ def create_rejection_mask(disp, im1, im2, mask):
     #m= cv2.remap(im2, disp, None, cv2.INTER_LINEAR) #, cv2.BORDER_CONSTANT, np.nan)   # cv2 alternative
     m = ( np.isfinite(im1) * np.isfinite(m) * np.isfinite(disp[:,:,0]) ).astype(np.uint8)
     common.rasterio_write(mask, m )
-
-
 
 
 def compute_disparity_map(cfg, im1, im2, disp, mask, algo, disp_min=None,
@@ -142,12 +141,13 @@ def compute_disparity_map(cfg, im1, im2, disp, mask, algo, disp_min=None,
 
         win = 3  # matched block size. It must be a positive odd number
         lr = 1  # maximum difference allowed in the left-right disparity check
-        cost = common.tmpfile('.tif')
+        cost = tempfile.NamedTemporaryFile()
         common.run('sgbm {} {} {} {} {} {} {} {} {} {}'.format(im1, im2,
-                                                               disp, cost,
+                                                               disp, cost.name,
                                                                disp_min,
                                                                disp_max,
                                                                win, p1, p2, lr))
+        cost.close()
 
         create_rejection_mask(disp, im1, im2, mask)
 
@@ -238,8 +238,6 @@ def compute_disparity_map(cfg, im1, im2, disp, mask, algo, disp_min=None,
         create_rejection_mask(disp, im1, im2, mask)
 
 
-
-
     if algo == 'mgm_multi':
         env['REMOVESMALLCC']  = str(cfg['stereo_speckle_filter'])
         env['MINDIFF']        = str(cfg['mgm_mindiff_control'])
@@ -282,4 +280,3 @@ def compute_disparity_map(cfg, im1, im2, disp, mask, algo, disp_min=None,
         )
 
         create_rejection_mask(disp, im1, im2, mask)
-

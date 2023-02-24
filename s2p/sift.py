@@ -316,7 +316,7 @@ def image_keypoints_cv(im, x, y, w, h, max_nb=None, thresh_dog=0.0133, nb_octave
         w = min(w, ds.width - x)
         h = min(h, ds.height - y)
         in_buffer = ds.read(window=rio.windows.Window(x, y, w, h))
-    
+
 #    im_adjusted =  cv.normalize(in_buffer[0] - cv.GaussianBlur(in_buffer[0], [11,11],5), cv.NORM_MINMAX, 0, 255).converTo(cv.CV_8U)
 
     from s2p import common
@@ -342,8 +342,8 @@ def image_keypoints_cv(im, x, y, w, h, max_nb=None, thresh_dog=0.0133, nb_octave
     return kp1, des1
 
 
-def matches_on_rpc_roi_cv(im1, im2, rpc1, rpc2, x, y, w, h,
-                       method, sift_thresh, epipolar_threshold):
+def matches_on_rpc_roi_cv(cfg, im1, im2, rpc1, rpc2, x, y, w, h,
+                          method, sift_thresh, epipolar_threshold):
     """
     Compute a list of SIFT matches between two images on a given roi.
 
@@ -364,10 +364,10 @@ def matches_on_rpc_roi_cv(im1, im2, rpc1, rpc2, x, y, w, h,
             contains one pair of points, ordered as x1 y1 x2 y2.
             The coordinate system is that of the full images.
     """
-    x2, y2, w2, h2 = rpc_utils.corresponding_roi(rpc1, rpc2, x, y, w, h)
+    x2, y2, w2, h2 = rpc_utils.corresponding_roi(cfg, rpc1, rpc2, x, y, w, h)
 
     # estimate an approximate affine fundamental matrix from the rpcs
-    rpc_matches = rpc_utils.matches_from_rpc(rpc1, rpc2, x, y, w, h, 5)
+    rpc_matches = rpc_utils.matches_from_rpc(cfg, rpc1, rpc2, x, y, w, h, 5)
     F = estimation.affine_fundamental_matrix(rpc_matches)
 
     # if less than 10 matches, lower thresh_dog. An alternative would be ASIFT
@@ -395,7 +395,7 @@ def matches_on_rpc_roi_cv(im1, im2, rpc1, rpc2, x, y, w, h,
         if ref_matched_kpts.shape[0] <4:
             print("WARNING: sift.matches_on_rpc_roi_cv: found no matches.")
             return None
-        
+
         # Compute homography using RANSAC
         H, mask = cv.findHomography(sec_matched_kpts, ref_matched_kpts, cv.RANSAC, 5.0)
 
@@ -420,5 +420,4 @@ def matches_on_rpc_roi_cv(im1, im2, rpc1, rpc2, x, y, w, h,
 
 
 
-    
 

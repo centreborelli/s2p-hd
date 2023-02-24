@@ -4,6 +4,7 @@
 # Copyright (C) 2015, Julien Michel <julien.michel@cnes.fr>
 
 import subprocess
+import tempfile
 import numpy as np
 import warnings
 import rasterio
@@ -44,23 +45,25 @@ def image_tile_mask(x, y, w, h, roi_gml=None, cld_gml=None, raster_mask=None,
     mask = np.ones((h, w), dtype=bool)
 
     if roi_gml is not None:  # image domain mask (polygons)
-        tmp = common.tmpfile('.png')
+        tmp = tempfile.NamedTemporaryFile()
         subprocess.check_call('cldmask %d %d -h "%s" %s %s' % (w, h, hij,
-                                                               roi_gml, tmp),
+                                                               roi_gml, tmp.name),
                               shell=True)
-        with rasterio.open(tmp, 'r') as f:
+        with rasterio.open(tmp.name, 'r') as f:
             mask = np.logical_and(mask, f.read().squeeze().astype(bool))
+        tmp.close()
 
         if not mask.any():
             return mask
 
     if cld_gml is not None:  # cloud mask (polygons)
-        tmp = common.tmpfile('.png')
+        tmp = tempfile.NamedTemporaryFile()
         subprocess.check_call('cldmask %d %d -h "%s" %s %s' % (w, h, hij,
-                                                               cld_gml, tmp),
+                                                               cld_gml, tmp.name),
                               shell=True)
-        with rasterio.open(tmp, 'r') as f:
+        with rasterio.open(tmp.name, 'r') as f:
             mask = np.logical_and(mask, ~f.read().squeeze().astype(bool))
+        tmp.close()
 
         if not mask.any():
             return mask

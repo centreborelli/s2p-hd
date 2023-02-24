@@ -22,7 +22,8 @@
 import sys
 import os.path
 import json
-import datetime
+import multiprocessing
+import tempfile
 from typing import List
 import multiprocessing
 multiprocessing.set_start_method('fork')  # needed after python3.8 for multi-platform consistency
@@ -33,7 +34,6 @@ import rasterio.merge
 from plyflatten import plyflatten_from_plyfiles_list
 
 
-from s2p.config import cfg
 from s2p import common
 from s2p import parallel
 from s2p import geographiclib
@@ -46,10 +46,11 @@ from s2p import ply
 from s2p import triangulation
 from s2p import fusion
 from s2p import visualisation
+from s2p import config
 from s2p.tile import Tile
 
 
-def pointing_correction(tile: Tile, i):
+def pointing_correction(cfg, tile: Tile, i):
     """
     Compute the translation that corrects the pointing error on a pair of tiles.
 
@@ -86,7 +87,7 @@ def pointing_correction(tile: Tile, i):
                                        x, y, w, h)
 
 
-def global_pointing_correction(tiles: List[Tile]) -> None:
+def global_pointing_correction(cfg, tiles: List[Tile]) -> None:
     """
     Compute the global pointing corrections for each pair of images.
 
@@ -103,7 +104,7 @@ def global_pointing_correction(tiles: List[Tile]) -> None:
                 common.remove(os.path.join(d, 'center_keypts_sec.txt'))
 
 
-def rectification_pair(tile: Tile, i: int) -> None:
+def rectification_pair(cfg, tile: Tile, i: int) -> None:
     """
     Rectify a pair of images on a given tile.
 
@@ -168,7 +169,7 @@ def rectification_pair(tile: Tile, i: int) -> None:
 #        common.remove(os.path.join(out_dir, 'sift_matches.txt'))
 
 
-def disparity_range_check(tile: Tile, i: int):
+def disparity_range_check(cfg, tile: Tile, i: int):
     """
     Reason about the estimated disparity ranges for all the tiles and update them if needed
 
@@ -209,7 +210,7 @@ def disparity_range_check(tile: Tile, i: int):
 
 
 
-def stereo_matching(tile: Tile, i: int) -> None:
+def stereo_matching(cfg, tile: Tile, i: int) -> None:
     """
     Compute the disparity of a pair of images on a given tile.
 
@@ -250,7 +251,7 @@ def stereo_matching(tile: Tile, i: int) -> None:
 #        common.remove(os.path.join(out_dir, 'disp_min_max.txt'))
 
 
-def disparity_to_height(tile: Tile, i: int) -> None:
+def disparity_to_height(cfg, tile: Tile, i: int) -> None:
     """
     Compute a height map from the disparity map of a pair of image tiles.
 
@@ -293,7 +294,7 @@ def disparity_to_height(tile: Tile, i: int) -> None:
         common.remove(mask)
 
 
-def disparity_to_ply(tile: Tile) -> None:
+def disparity_to_ply(cfg, tile: Tile) -> None:
     """
     Compute a point cloud from the disparity map of a pair of image tiles.
 
@@ -332,11 +333,12 @@ def disparity_to_ply(tile: Tile) -> None:
         with rasterio.open(os.path.join(out_dir, 'pair_1', 'rectified_ref.tif')) as f:
             ww, hh = f.width, f.height
 
-        colors = common.tmpfile(".tif")
-        common.image_apply_homography(colors, cfg['images'][0]['clr'],
+        colors_path = tempfile.NamedTemporaryFile()
+        common.image_apply_homography(colors_path.name, cfg['images'][0]['clr'],
                                       np.loadtxt(H_ref), ww, hh)
-        with rasterio.open(colors, "r") as f:
+        with rasterio.open(colors_path.name, "r") as f:
             colors = f.read()
+        colors_path.close()
 
     else:
         with rasterio.open(os.path.join(out_dir, 'pair_1', 'rectified_ref.tif')) as f:
@@ -386,7 +388,7 @@ def disparity_to_ply(tile: Tile) -> None:
         common.remove(os.path.join(out_dir, 'pair_1', 'rectified_ref.tif'))
 
 
-def mean_heights(tile: Tile) -> None:
+def mean_heights(cfg, tile: Tile) -> None:
     w, h = tile.coordinates[2:]
     n = len(cfg['images']) - 1
     maps = np.empty((h, w, n))
@@ -406,7 +408,7 @@ def mean_heights(tile: Tile) -> None:
                [np.nanmean(validity_mask * maps[:, :, i]) for i in range(n)])
 
 
-def global_mean_heights(tiles: List[Tile]) -> None:
+def global_mean_heights(cfg, tiles: List[Tile]) -> None:
     local_mean_heights = [np.loadtxt(os.path.join(t.dir, 'local_mean_heights.txt'))
                           for t in tiles]
     global_mean_heights = np.nanmean(local_mean_heights, axis=0)
@@ -416,7 +418,7 @@ def global_mean_heights(tiles: List[Tile]) -> None:
                    [global_mean_heights[i]])
 
 
-def heights_fusion(tile: Tile) -> None:
+def heights_fusion(cfg, tile: Tile) -> None:
     """
     Merge the height maps computed for each image pair and generate a ply cloud.
 
@@ -449,7 +451,7 @@ def heights_fusion(tile: Tile) -> None:
             common.remove(f)
 
 
-def heights_to_ply(tile: Tile) -> None:
+def heights_to_ply(cfg, tile: Tile) -> None:
     """
     Generate a ply cloud.
 
@@ -457,7 +459,7 @@ def heights_to_ply(tile: Tile) -> None:
         tile: a Tile that provides all you need to process a tile
     """
     # merge the n-1 height maps of the tile (n = nb of images)
-    heights_fusion(tile)
+    heights_fusion(cfg, tile)
 
     # compute a ply from the merged height map
     out_dir = tile.dir
@@ -493,7 +495,7 @@ def heights_to_ply(tile: Tile) -> None:
         common.remove(os.path.join(out_dir, 'mask.png'))
 
 
-def plys_to_dsm(tile: Tile) -> None:
+def plys_to_dsm(cfg, tile: Tile) -> None:
     """
     Generates DSM from plyfiles (cloud.ply)
 
@@ -553,7 +555,7 @@ def plys_to_dsm(tile: Tile) -> None:
         common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
 
 
-def global_dsm(tiles: List[Tile]) -> None:
+def global_dsm(cfg, tiles: List[Tile]) -> None:
     """
     Merge tilewise DSMs and confidence maps in a global DSM and confidence map.
     """
@@ -609,18 +611,20 @@ def main(user_cfg, start_from=0):
         user_cfg: user config dictionary
         start_from: the step to start from (default: 0)
     """
-    common.print_elapsed_time.t0 = datetime.datetime.now()
-    initialization.build_cfg(user_cfg)
-    initialization.make_dirs()
+    common.reset_elapsed_time()
+
+    cfg = config.get_default_config()
+    initialization.build_cfg(cfg, user_cfg)
+    initialization.make_dirs(cfg)
 
     # multiprocessing setup
     nb_workers = multiprocessing.cpu_count()  # nb of available cores
     if cfg['max_processes'] is not None:
         nb_workers = cfg['max_processes']
 
-    tw, th = initialization.adjust_tile_size()
+    tw, th = initialization.adjust_tile_size(cfg)
     tiles_txt = os.path.join(cfg['out_dir'], 'tiles.txt')
-    tiles = initialization.tiles_full_info(tw, th, tiles_txt, create_masks=True)
+    tiles = initialization.tiles_full_info(cfg, tw, th, tiles_txt, create_masks=True)
     if not tiles:
         print('ERROR: the ROI is not seen in two images or is totally masked.')
         sys.exit(1)
@@ -635,25 +639,26 @@ def main(user_cfg, start_from=0):
                 print(t.json, file=f)
 
     n = len(cfg['images'])
-    tiles_pairs = [(t, i) for i in range(1, n) for t in tiles]
+    tiles_pairs = [(cfg, t, i) for i in range(1, n) for t in tiles]
+    tiles_with_cfg = [(cfg, t) for t in tiles]
     timeout = cfg['timeout']
 
     # local-pointing step:
     if start_from <= 1:
         print('1) correcting pointing locally...')
-        parallel.launch_calls(pointing_correction, tiles_pairs, nb_workers,
+        parallel.launch_calls(cfg, pointing_correction, tiles_pairs, nb_workers,
                               timeout=timeout)
 
     # global-pointing step:
     if start_from <= 2:
         print('2) correcting pointing globally...')
-        global_pointing_correction(tiles)
+        global_pointing_correction(cfg, tiles)
         common.print_elapsed_time()
 
     # rectification step:
     if start_from <= 3:
         print('3) rectifying tiles...')
-        parallel.launch_calls(rectification_pair, tiles_pairs, nb_workers,
+        parallel.launch_calls(cfg, rectification_pair, tiles_pairs, nb_workers,
                               timeout=timeout)
 
     # disparity range reasoning step: (WIP)
@@ -661,8 +666,8 @@ def main(user_cfg, start_from=0):
         print('4) reason about the disparity ranges... (WIP)')
         # extra step checking the disparity range
         # verity if the disparity range of a tile is not too different from its neighbors
-        for t,i in tiles_pairs:
-            disparity_range_check(t,i)
+        for _, t, i in tiles_pairs:
+            disparity_range_check(cfg, t, i)
 
     # matching step:
     if start_from <= 4:
@@ -671,46 +676,43 @@ def main(user_cfg, start_from=0):
             nb_workers_stereo = cfg['max_processes_stereo_matching']
         else:
             nb_workers_stereo = nb_workers
-        parallel.launch_calls(stereo_matching, tiles_pairs, nb_workers_stereo,
+        parallel.launch_calls(cfg, stereo_matching, tiles_pairs, nb_workers_stereo,
                               timeout=timeout)
 
     if start_from <= 5:
         if n > 2:
             # disparity-to-height step:
             print('5a) computing height maps...')
-            parallel.launch_calls(disparity_to_height, tiles_pairs, nb_workers,
+            parallel.launch_calls(cfg, disparity_to_height, tiles_pairs, nb_workers,
                                   timeout=timeout)
 
             print('5b) computing local pairwise height offsets...')
-            parallel.launch_calls(mean_heights, tiles, nb_workers, timeout=timeout)
+            parallel.launch_calls(cfg, mean_heights, tiles_with_cfg, nb_workers, timeout=timeout)
 
             # global-mean-heights step:
             print('5c) computing global pairwise height offsets...')
-            global_mean_heights(tiles)
+            global_mean_heights(cfg, tiles)
 
             # heights-to-ply step:
             print('5d) merging height maps and computing point clouds...')
-            parallel.launch_calls(heights_to_ply, tiles, nb_workers,
+            parallel.launch_calls(cfg, heights_to_ply, tiles_with_cfg, nb_workers,
                                   timeout=timeout)
         else:
             # triangulation step:
             print('5) triangulating tiles...')
-            parallel.launch_calls(disparity_to_ply, tiles, nb_workers,
+            parallel.launch_calls(cfg, disparity_to_ply, tiles_with_cfg, nb_workers,
                                   timeout=timeout)
 
     # local-dsm-rasterization step:
     if start_from <= 6:
         print('computing DSM by tile...')
-        parallel.launch_calls(plys_to_dsm, tiles, nb_workers, timeout=timeout)
+        parallel.launch_calls(cfg, plys_to_dsm, tiles_with_cfg, nb_workers, timeout=timeout)
 
     # global-dsm-rasterization step:
     if start_from <= 7:
         print('7) computing global DSM...')
-        global_dsm(tiles)
+        global_dsm(cfg, tiles)
     common.print_elapsed_time()
-
-    # cleanup
-    common.garbage_cleanup()
     common.print_elapsed_time(since_first_call=True)
 
 
