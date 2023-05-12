@@ -3,11 +3,10 @@
 # top-most EditorConfig file
 root = true
 
-# utf8, unix-style newlines, no end of file newline, no trailing whitespaces
+# utf8, unix-style newlines, no trailing whitespaces
 [*]
 charset = utf-8
 end_of_line = lf
-insert_final_newline = false
 trim_trailing_whitespace = true
 
 # 4 space indentation
