@@ -26,7 +26,6 @@ import multiprocessing
 import tempfile
 from typing import List
 import multiprocessing
-multiprocessing.set_start_method('fork')  # needed after python3.8 for multi-platform consistency
 
 import numpy as np
 import rasterio
