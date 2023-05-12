@@ -268,7 +268,7 @@ def disparity_to_height(cfg, tile: Tile, i: int) -> None:
     H_sec = np.loadtxt(os.path.join(out_dir, 'H_sec.txt'))
     disp = os.path.join(out_dir, 'rectified_disp.tif')
     mask = os.path.join(out_dir, 'rectified_mask.png')
-    mask_orig = os.path.join(tile.dir, 'mask.png')
+    mask_orig = os.path.join(tile.dir, 'mask.tif')
     pointing = os.path.join(cfg['out_dir'],
                             'global_pointing_pair_{}.txt'.format(i))
 
@@ -318,7 +318,7 @@ def disparity_to_ply(cfg, tile: Tile) -> None:
     if not os.path.exists(extra):    # confidence file not always generated
         extra = ''
     mask_rect = os.path.join(out_dir, 'pair_1', 'rectified_mask.png')
-    mask_orig = os.path.join(out_dir, 'mask.png')
+    mask_orig = os.path.join(out_dir, 'mask.tif')
 
     # first check if disp exists for this tile
     if os.path.exists(disp) is False:
@@ -491,7 +491,7 @@ def heights_to_ply(cfg, tile: Tile) -> None:
 
     if cfg['clean_intermediate']:
         common.remove(height_map)
-        common.remove(os.path.join(out_dir, 'mask.png'))
+        common.remove(os.path.join(out_dir, 'mask.tif'))
 
 
 def plys_to_dsm(cfg, tile: Tile) -> None:

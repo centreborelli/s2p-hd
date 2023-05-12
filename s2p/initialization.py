@@ -414,8 +414,8 @@ def tiles_full_info(cfg, tw, th, tiles_txt, create_masks=False) -> List[Tile]:
                 json.dump(tile_cfg, f, indent=2, default=workaround_json_int64)
 
             # save the mask
-            common.rasterio_write(os.path.join(tile.dir, 'mask.png'),
-                                  mask.astype(np.uint8))
+            common.rasterio_write(os.path.join(tile.dir, 'mask.tif'),
+                                  mask.astype(np.uint8), {"NBITS": 1, "compress": "LZW"})
     else:
         if len(tiles_coords) == 1:
             tiles.append(create_tile(cfg, tiles_coords[0], neighborhood_coords_dict))
