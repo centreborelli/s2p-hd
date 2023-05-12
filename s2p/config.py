@@ -188,4 +188,7 @@ def get_default_config() -> dict:
     # or the WGS84 ellipsoid vertical datum (if False). If out_crs is set, this parameter is ignored.
     cfg['out_geoid'] = False
 
+    # If true, discard tiles that are all nodata (or 0 if 'nodata' is not set in the profile).
+    cfg['init_check_all_nodata'] = False
+
     return cfg

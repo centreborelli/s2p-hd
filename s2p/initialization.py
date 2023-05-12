@@ -301,12 +301,9 @@ def is_tile_all_nodata(path:str, window:rasterio.windows.Window):
         # NOTE: Many satellite imagery providers use ds.nodata as the value of
         # nodata pixels. Pleiades and PNeo imagery use None as nodata in their
         # profile while putting 0 to nodata pixel in reality. Thus, we have to
-        # check both ds.nodata and 0 here. I.e., if a window is full of nodata
-        # or 0, then this window is discarded.
-        if np.all(arr == 0) or np.all(arr == ds.nodata):
-            return True
-        else:
-            return False
+        # If a window is full of nodata (or 0), then this window is discarded.
+        nodata = ds.nodata or 0
+        return (arr == nodata).all()
 
 
 def is_this_tile_useful(cfg, x, y, w, h, images_sizes):
@@ -324,11 +321,12 @@ def is_this_tile_useful(cfg, x, y, w, h, images_sizes):
         useful (bool): bool telling if the tile has to be processed
         mask (np.array): tile validity mask. Set to None if the tile is discarded
     """
-    if is_tile_all_nodata(cfg["images"][0]["img"], rasterio.windows.Window(x, y, w, h)):
+    img0 = cfg["images"][0]
+    if cfg["init_check_all_nodata"] and is_tile_all_nodata(img0["img"], rasterio.windows.Window(x, y, w, h)):
         return False, None
 
     # check if the tile is partly contained in at least one other image
-    rpc = cfg['images'][0]['rpcm']
+    rpc = img0['rpcm']
     for img, size in zip(cfg['images'][1:], images_sizes[1:]):
         coords = rpc_utils.corresponding_roi(cfg, rpc, img['rpcm'], x, y, w, h)
         if rectangles_intersect(coords, (0, 0, size[1], size[0])):
@@ -336,9 +334,9 @@ def is_this_tile_useful(cfg, x, y, w, h, images_sizes):
     else:  # we've reached the end of the loop hence the tile is not contained
         return False, None
 
-    roi_msk = cfg['images'][0]['roi']
-    cld_msk = cfg['images'][0]['cld']
-    wat_msk = cfg['images'][0]['wat']
+    roi_msk = img0['roi']
+    cld_msk = img0['cld']
+    wat_msk = img0['wat']
     mask = masking.image_tile_mask(x, y, w, h, roi_msk, cld_msk, wat_msk,
                                    images_sizes[0], cfg['border_margin'])
     if not mask.any():
