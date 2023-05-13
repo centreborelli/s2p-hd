@@ -58,7 +58,8 @@ requirements = ['numpy',
                 'rpcm @ git+https://github.com/centreborelli/rpcm',
                 'srtm4>=1.1.2',
                 'opencv-contrib-python',
-                'requests']
+                'requests',
+                'cffi']
 
 extras_require = {
     "test": ["pytest", "pytest-cov", "psutil"],

@@ -9,6 +9,7 @@ dist
 
 bin
 build
+lib
 .srtm
 experiments
 3rdparty/sgbm/sgbm
@@ -24,5 +25,4 @@ ipynb
 
 iterate.dat
 
-testoutput
 .idea

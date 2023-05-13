@@ -80,7 +80,8 @@ msmw2:
 sgm_gpu:
 	mkdir -p bin/build_sgm_gpu
 	cd bin/build_sgm_gpu; cmake -D CMAKE_BUILD_TYPE=Release ../../3rdparty/sgm_gpu-develop-for-s2p; $(MAKE)
-	cp bin/build_sgm_gpu/stereosgm bin
+	cp bin/build_sgm_gpu/libstereosgm.so lib
+	cp 3rdparty/sgm_gpu-develop-for-s2p/src/libsgmgpu.h lib
 
 
 
