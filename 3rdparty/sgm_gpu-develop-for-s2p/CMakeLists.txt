@@ -27,3 +27,5 @@ file(GLOB stereosgm_SRC
 
 cuda_add_library(stereosgm src/libsgmgpu.cpp src/stereo_sgm.cpp ${stereosgm_SRC} SHARED)
 target_link_libraries(stereosgm ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+install(TARGETS stereosgm DESTINATION lib)
+install(FILES ./src/libsgmgpu.h DESTINATION lib)
