@@ -279,22 +279,37 @@ void print_rpc(FILE *f, struct rpc *p, char *n)
 	FORI(3)fprintf(stderr,"rpc(%s) ioffs[%d] = %.18lf\n",n,i,p->ioffset[i]);
 }
 
-// evaluate a polynomial of degree 3
-double eval_pol20(double c[20], double x, double y, double z)
+void preeval_pol20(double out[20], double x, double y, double z)
 {
 	// XXX WARNING: inversion here!
 	double col = y;
 	double lig = x;
 	double alt = z;
-	double m[20] = {1, lig, col, alt, lig*col,
-		lig*alt, col*alt, lig*lig, col*col, alt*alt,
-		col*lig*alt, lig*lig*lig, lig*col*col, lig*alt*alt, lig*lig*col,
-		col*col*col, col*alt*alt, lig*lig*alt, col*col*alt, alt*alt*alt
-	};
-	//double m[20] = {1, x, y, z, x*y,
-	//	x*z, y*z, x*x, y*y, z*z,
-	//	x*y*z, x*x*x, x*y*y, x*z*z, x*x*y,
-	//	y*y*y, y*z*z, x*x*z, y*y*z, z*z*z};
+	out[0] = 1;
+	out[1] = lig;
+	out[2] = col;
+	out[3] = alt;
+	out[4] = lig*col;
+	out[5] = lig*alt;
+	out[6] = col*alt;
+	out[7] = lig*lig;
+	out[8] = col*col;
+	out[9] = alt*alt;
+	out[10] = col*lig*alt;
+	out[11] = lig*lig*lig;
+	out[12] = lig*col*col;
+	out[13] = lig*alt*alt;
+	out[14] = lig*lig*col;
+	out[15] = col*col*col;
+	out[16] = col*alt*alt;
+	out[17] = lig*lig*alt;
+	out[18] = col*col*alt;
+	out[19] = alt*alt*alt;
+}
+
+// evaluate a polynomial of degree 3, prepared by preeval_pol20
+static double peval_pol20(double c[20], double m[20])
+{
 	double r = 0;
 	for (int i = 0; i < 20; i++)
 		r += c[i]*m[i];
@@ -341,10 +356,12 @@ double eval_pol20_dz(double c[20], double x, double y, double z)
 static void eval_nrpci(double *result,
 		struct rpc *p, double x, double y, double z)
 {
-	double numx = eval_pol20(p->inumx, x, y, z);
-	double denx = eval_pol20(p->idenx, x, y, z);
-	double numy = eval_pol20(p->inumy, x, y, z);
-	double deny = eval_pol20(p->ideny, x, y, z);
+	double m[20];
+	preeval_pol20(m, x, y, z);
+	double numx = peval_pol20(p->inumx, m);
+	double denx = peval_pol20(p->idenx, m);
+	double numy = peval_pol20(p->inumy, m);
+	double deny = peval_pol20(p->ideny, m);
 	result[0] = numx/denx;
 	result[1] = numy/deny;
 	//fprintf(stderr, "\t\tnrpci{%p}(%g %g %g)=>",p,x,y,z);
@@ -419,10 +436,12 @@ static void eval_nrpc(double *result,
 		struct rpc *p, double x, double y, double z)
 {
 	if (isfinite(p->numx[0])) {
-		double numx = eval_pol20(p->numx, x, y, z);
-		double denx = eval_pol20(p->denx, x, y, z);
-		double numy = eval_pol20(p->numy, x, y, z);
-		double deny = eval_pol20(p->deny, x, y, z);
+		double m[20];
+		preeval_pol20(m, x, y, z);
+		double numx = peval_pol20(p->numx, m);
+		double denx = peval_pol20(p->denx, m);
+		double numy = peval_pol20(p->numy, m);
+		double deny = peval_pol20(p->deny, m);
 		result[0] = numx/denx;
 		result[1] = numy/deny;
 		//fprintf(stderr, "\t\tnrpc{%p}(%g %g %g)=>(%g %g)\n", p, x, y, z, result[0], result[1]);
