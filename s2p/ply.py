@@ -37,17 +37,17 @@ def write_3d_point_cloud_to_ply(path_to_ply_file, coordinates, colors=None,
             (optional) extra properties
         comments (list): list of strings containing the ply header comments
     """
-    points = coordinates
     dtypes = [('x', coordinates.dtype),
               ('y', coordinates.dtype),
               ('z', coordinates.dtype)]
+    arrays = [coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
 
     if colors is not None:
         if colors.shape[1] == 1:  # replicate grayscale 3 times
             colors = np.column_stack([colors] * 3)
         elif colors.shape[1] not in [3, 4]:
             raise Exception('Error: colors must have either 1, 3 or 4 channels')
-        points = np.column_stack((points, colors))
+        arrays += [colors[:, 0], colors[:, 1], colors[:, 2]]
         dtypes += [('red', colors.dtype),
                    ('green', colors.dtype),
                    ('blue', colors.dtype)]
@@ -55,10 +55,11 @@ def write_3d_point_cloud_to_ply(path_to_ply_file, coordinates, colors=None,
             dtypes += [('ir', colors.dtype)]
 
     if extra_properties is not None:
-        points = np.column_stack((points, extra_properties))
+        if extra_properties.ndim == 1:
+            extra_properties = extra_properties[..., None]
+        arrays += [extra_properties[:, i] for i in range(extra_properties.shape[1])]
         dtypes += [(s, extra_properties.dtype) for s in extra_properties_names]
 
-    tuples = [tuple(x) for x in points]
-    plydata = plyfile.PlyElement.describe(np.asarray(tuples, dtype=dtypes),
-                                          'vertex')
+    data = np.core.records.fromarrays(arrays, dtypes)
+    plydata = plyfile.PlyElement.describe(data, 'vertex')
     plyfile.PlyData([plydata], comments=comments).write(path_to_ply_file)
