@@ -271,35 +271,6 @@ def stereo_corresp_to_xyz(rpc1, rpc2, pts1, pts2, out_crs=None):
     return xyz_array, err
 
 
-def count_3d_neighbors(xyz, r, p):
-    """
-    Count 3D neighbors of a gridded set of 3D points.
-
-    Args:
-        xyz (array): 3D array of shape (h, w, 3) where each pixel contains the
-            UTM easting, northing, and altitude of a 3D point.
-        r (float): filtering radius, in the unit of the CRS (ex: meters)
-        p (int): the filering window has size 2p + 1, in pixels
-
-    Returns:
-        array of shape (h, w) with the count of the number of 3D points located
-        less than r units from the current 3D point
-    """
-    h, w, d = xyz.shape
-    assert(d == 3)
-
-    # define the argument types of the count_3d_neighbors function from disp_to_h.so
-    lib.count_3d_neighbors.argtypes = (ndpointer(dtype=c_int, shape=(h, w)),
-                                       ndpointer(dtype=c_double, shape=(h, w, 3)),
-                                       c_int, c_int, c_float, c_int)
-
-    # call the count_3d_neighbors function from disp_to_h.so
-    out = np.zeros((h, w), dtype='int32')
-    lib.count_3d_neighbors(out, np.ascontiguousarray(xyz), w, h, r, p)
-
-    return out
-
-
 def remove_isolated_3d_points(xyz, r, p, n, q=1):
     """
     Discard (in place) isolated (groups of) points in a gridded set of 3D points
