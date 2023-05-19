@@ -30,11 +30,13 @@ class Parameters {
             const bool adjustSize,
             const size_t oWidth,
             const size_t oHeight,
-            const bool verbose) {
+            const bool verbose,
+            const bool antiAliasing) {
         m_adjustSize = adjustSize;
         m_oWidth = oWidth;
         m_oHeight = oHeight;
         m_verbose = verbose;
+        m_antiAliasing = antiAliasing;
     }
 
     /**
@@ -66,6 +68,7 @@ class Parameters {
     size_t oWidth    () const {return m_oWidth    ;}
     size_t oHeight   () const {return m_oHeight   ;}
     bool   verbose   () const {return m_verbose   ;}
+    bool   antiAliasing   () const {return m_antiAliasing   ;}
 
     /**
      * @brief Setters.
@@ -150,6 +153,7 @@ class Parameters {
     size_t m_oWidth;     // Width of the output image          -c [%d]
     size_t m_oHeight;    // Height of the output image         -l [%d]
     bool   m_verbose;    // Activate the verbose mode          -v
+    bool   m_antiAliasing;
 };
 #else
 class Parameters;

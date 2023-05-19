@@ -157,7 +157,7 @@ int main(int c, char* v[])
 
 		// call the mapping function
 		Image out_l(out_w, out_h, 1);
-		Parameters params(0, out_w, out_h, true);
+		Parameters params(0, out_w, out_h, true, true);
 		runHomography(roi, hom_compensated, out_l, params);
 		if (verbose) time.get_time("Apply homography");
 

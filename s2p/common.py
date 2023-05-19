@@ -122,61 +122,6 @@ def rasterio_write(path, array, profile={}, tags={}):
             dst.update_tags(**tags)
 
 
-def image_apply_homography(out, im, H, w, h):
-    """
-    Applies an homography to an image.
-
-    Args:
-        out: path to the output image file
-        im: path to the input image file
-        H: numpy array containing the 3x3 homography matrix
-        w, h: dimensions (width and height) of the output image
-
-    The output image is defined on the domain [0, w] x [0, h]. Its pixels
-    intensities are defined by out(x) = im(H^{-1}(x)).
-
-    This function calls the homography binary, rewritten by Marc Lebrun and
-    Carlo de Franchis based on a code of Pascal Monasse refactored by Gabriele
-    Facciolo.
-    """
-    # write the matrix to a string
-    hij = " ".join(str(x) for x in H.flatten())
-
-    # apply the homography
-    run(["homography", im, "-h", hij, out, "%d" % w, "%d" % h])
-
-
-def points_apply_homography(H, pts):
-    """
-    Applies an homography to a list of 2D points.
-
-    Args:
-        H: numpy array containing the 3x3 homography matrix
-        pts: numpy array containing the list of 2D points, one per line
-
-    Returns:
-        a numpy array containing the list of transformed points, one per line
-    """
-    # if the list of points is not a numpy array, convert it
-    if (type(pts) == list):
-        pts = np.array(pts)
-
-    # convert the input points to homogeneous coordinates
-    if len(pts[0]) < 2:
-        raise ValueError(
-            "The input must be a numpy array"
-            "of 2D points, one point per line"
-        )
-    pts = np.hstack((pts[:, 0:2], pts[:, 0:1]*0+1))
-
-    # apply the transformation
-    Hpts = (np.dot(H, pts.T)).T
-
-    # normalize the homogeneous result and trim the extra dimension
-    Hpts = Hpts * (1.0 / np.tile( Hpts[:, 2], (3, 1)) ).T
-    return Hpts[:, 0:2]
-
-
 def bounding_box2D(pts):
     """
     bounding box for the points pts

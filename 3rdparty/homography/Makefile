@@ -1,9 +1,8 @@
 CXXFLAGS ?= -march=native -O3
-override CXXFLAGS := $(CXXFLAGS) `gdal-config --cflags`
+override CXXFLAGS := $(CXXFLAGS) `gdal-config --cflags` -fPIC
 override LDLIBS  := $(LDLIBS) `gdal-config --libs`
 
-OBJ = main.o \
-      LibImages/LibImages.o \
+OBJ = LibImages/LibImages.o \
       Utilities/Utilities.o \
       Utilities/Memory.o \
       Utilities/Parameters.o \
@@ -11,11 +10,14 @@ OBJ = main.o \
       LibHomography/Homography.o \
       LibHomography/Splines.o
 
-homography: $(OBJ)
+homography: main.o $(OBJ)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+libhomography.so: libhomography.o $(OBJ)
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@ -shared -fPIC
+
 clean:
-	rm -f homography $(OBJ)
+	rm -f homography libhomography.so $(OBJ)
 
 
 # hack (compatibility flags for badly configured OSX clang)

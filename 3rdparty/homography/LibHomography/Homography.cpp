@@ -42,7 +42,8 @@ void runHomography(
   }
 
   //! Apply the homography
-  mapImage(i_im, i_mat, o_im, p_params.verbose(), adjustSize);
+  bool useAntiAliasing = p_params.antiAliasing();
+  mapImage(i_im, i_mat, o_im, p_params.verbose(), adjustSize, useAntiAliasing);
 }
 
 

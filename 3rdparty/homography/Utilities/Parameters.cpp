@@ -34,7 +34,8 @@ Parameters::Parameters(
   m_adjustSize   (false),      // Activate the automatic size        -a
   m_oWidth       (0),          // Wanted width of te output image    -c [%d]
   m_oHeight      (0),          // Wanted height of the output image  -l [%d]
-  m_verbose      (false)       // Activate verbose mode              -v
+  m_verbose      (false),      // Activate verbose mode              -v
+  m_antiAliasing (true)
   {
 
 }
@@ -59,7 +60,8 @@ Parameters::Parameters(
   m_adjustSize   (i_params.adjustSize()),
   m_oWidth       (i_params.oWidth()),
   m_oHeight      (i_params.oHeight()),
-  m_verbose      (i_params.verbose()) {
+  m_verbose      (i_params.verbose()),
+  m_antiAliasing (i_params.antiAliasing()) {
 
 }
 

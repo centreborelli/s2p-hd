@@ -54,6 +54,6 @@ def test_affine_transformation():
         A[:2, :] = np.random.random((2, 3))
 
     for B in translations + isometries + similarities + affinities:
-        xx = s2p.common.points_apply_homography(B, x)
+        xx = s2p.homography.points_apply_homography(B, x)
         E = s2p.estimation.affine_transformation(x, xx)
         np.testing.assert_array_almost_equal(E, B)

@@ -15,9 +15,9 @@ NVCC_TEST := $(notdir $(NVCC_RESULT))
 
 # default rule builds only the programs necessary for the test skip sgm_gpu is cuda is not presetn
 ifeq ($(NVCC_TEST),nvcc)
-default: homography sift mgm_multi tvl1 executables libraries sgm_gpu
+default: libhomography sift mgm_multi tvl1 executables libraries sgm_gpu
 else
-default: homography sift mgm_multi tvl1 executables libraries #sgm_gpu
+default: libhomography sift mgm_multi tvl1 executables libraries #sgm_gpu
 endif
 
 
@@ -33,10 +33,10 @@ test: default
 #
 
 
-
-homography:
-	$(MAKE) -j -C 3rdparty/homography
-	cp 3rdparty/homography/homography bin
+libhomography:
+	$(MAKE) -j -C 3rdparty/homography libhomography.so
+	cp 3rdparty/homography/libhomography.h lib
+	cp 3rdparty/homography/libhomography.so lib
 
 sift:
 	$(MAKE) -j -C 3rdparty/sift/simd libsift4ctypes.so

@@ -13,6 +13,7 @@ from s2p import estimation
 from s2p import evaluation
 from s2p import common
 from s2p import visualisation
+from s2p import homography
 
 
 class NoRectificationMatchesError(Exception):
@@ -65,10 +66,10 @@ def register_horizontally_shear(matches, H1, H2, debug=False):
     matches whose disparity is only along the x-axis.
     """
     # transform the matches according to the homographies
-    p1 = common.points_apply_homography(H1, matches[:, :2])
+    p1 = homography.points_apply_homography(H1, matches[:, :2])
     x1 = p1[:, 0]
     y1 = p1[:, 1]
-    p2 = common.points_apply_homography(H2, matches[:, 2:])
+    p2 = homography.points_apply_homography(H2, matches[:, 2:])
     x2 = p2[:, 0]
     y2 = p2[:, 1]
 
@@ -108,10 +109,10 @@ def register_horizontally_translation(matches, H1, H2, flag='center', debug=Fals
     on the disparity range.
     """
     # transform the matches according to the homographies
-    p1 = common.points_apply_homography(H1, matches[:, :2])
+    p1 = homography.points_apply_homography(H1, matches[:, :2])
     x1 = p1[:, 0]
     y1 = p1[:, 1]
-    p2 = common.points_apply_homography(H2, matches[:, 2:])
+    p2 = homography.points_apply_homography(H2, matches[:, 2:])
     x2 = p2[:, 0]
     y2 = p2[:, 1]
 
@@ -147,9 +148,9 @@ def disparity_range_from_matches(matches, H1, H2, disp_range_extra_margin):
         disp_min, disp_max: horizontal disparity range
     """
     # transform the matches according to the homographies
-    p1 = common.points_apply_homography(H1, matches[:, :2])
+    p1 = homography.points_apply_homography(H1, matches[:, :2])
     x1 = p1[:, 0]
-    p2 = common.points_apply_homography(H2, matches[:, 2:])
+    p2 = homography.points_apply_homography(H2, matches[:, 2:])
     x2 = p2[:, 0]
 
     # compute the final disparity range
@@ -265,14 +266,14 @@ def rectification_homographies(matches, x, y, w, h, debug=False):
     S1, S2 = estimation.rectifying_similarities_from_affine_fundamental_matrix(F, debug)
 
     if debug:
-        y1 = common.points_apply_homography(S1, matches[:, :2])[:, 1]
-        y2 = common.points_apply_homography(S2, matches[:, 2:])[:, 1]
+        y1 = homography.points_apply_homography(S1, matches[:, :2])[:, 1]
+        y2 = homography.points_apply_homography(S2, matches[:, 2:])[:, 1]
         err = np.abs(y1 - y2)
         print("max, min, mean rectification error on point matches: ", end=' ')
         print(np.max(err), np.min(err), np.mean(err))
 
     # pull back top-left corner of the ROI to the origin (plus margin)
-    pts = common.points_apply_homography(S1, [[x, y], [x+w, y], [x+w, y+h], [x, y+h]])
+    pts = homography.points_apply_homography(S1, [[x, y], [x+w, y], [x+w, y+h], [x, y+h]])
     x0, y0 = common.bounding_box2D(pts)[:2]
     T = common.matrix_translation(-x0, -y0)
     return np.dot(T, S1), np.dot(T, S2), F
@@ -314,8 +315,8 @@ def rectify_pair(cfg, im1, im2, rpc1, rpc2, x, y, w, h, out1, out2, A=None, sift
 
         # correct second image coordinates with the pointing correction matrix
         if A is not None:
-            matches[:, 2:] = common.points_apply_homography(np.linalg.inv(A),
-                                                            matches[:, 2:])
+            matches[:, 2:] = homography.points_apply_homography(np.linalg.inv(A),
+                                                                matches[:, 2:])
     elif method == 'sift':
         matches = sift_matches
 
@@ -372,13 +373,13 @@ def rectify_pair(cfg, im1, im2, rpc1, rpc2, x, y, w, h, out1, out2, A=None, sift
 
     # compute output images size
     roi = [[x, y], [x+w, y], [x+w, y+h], [x, y+h]]
-    pts1 = common.points_apply_homography(H1, roi)
+    pts1 = homography.points_apply_homography(H1, roi)
     x0, y0, w0, h0 = common.bounding_box2D(pts1)
     # check that the first homography maps the ROI in the positive quadrant
     np.testing.assert_allclose(np.round([x0, y0]), [hmargin, vmargin], atol=.01)
 
     # apply homographies and do the crops
-    common.image_apply_homography(out1, im1, H1, w0 + 2*hmargin, h0 + 2*vmargin)
-    common.image_apply_homography(out2, im2, H2, w0 + 2*hmargin, h0 + 2*vmargin)
+    homography.image_apply_homography(out1, im1, H1, w0 + 2*hmargin, h0 + 2*vmargin, verbose=debug)
+    homography.image_apply_homography(out2, im2, H2, w0 + 2*hmargin, h0 + 2*vmargin, verbose=debug)
 
     return H1, H2, disp_m, disp_M
