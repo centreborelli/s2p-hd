@@ -80,7 +80,7 @@ def pointing_correction(cfg, tile: Tile, i):
         np.savetxt(os.path.join(out_dir, 'center_keypts_sec.txt'),
                    np.mean(m[:, 2:], 0), fmt='%9.3f')
         if cfg['debug']:
-            visualisation.plot_matches(img1, img2, rpc1, rpc2, m,
+            visualisation.plot_matches(cfg, img1, img2, rpc1, rpc2, m,
                                        os.path.join(out_dir,
                                                     'sift_matches_pointing.png'),
                                        x, y, w, h)
@@ -704,7 +704,7 @@ def main(user_cfg, start_from=0):
 
     # local-dsm-rasterization step:
     if start_from <= 6:
-        print('computing DSM by tile...')
+        print('6) computing DSM by tile...')
         parallel.launch_calls(cfg, plys_to_dsm, tiles_with_cfg, nb_workers, timeout=timeout)
 
     # global-dsm-rasterization step:
