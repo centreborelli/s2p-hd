@@ -191,4 +191,8 @@ def get_default_config() -> dict:
     # If true, discard tiles that are all nodata (or 0 if 'nodata' is not set in the profile).
     cfg['init_check_all_nodata'] = False
 
+    # Fit a localization RPC using the projection RPC.
+    # This speeds-up the triangulation step if the localization rpc is not provided in the images.
+    cfg['fit_localization_rpc'] = False
+
     return cfg

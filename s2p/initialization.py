@@ -67,6 +67,32 @@ def check_parameters(cfg, d: dict) -> None:
         else:
             img['rpcm'] = rpcm.rpc_from_geotiff(img['img'])
 
+        if d.get('fit_localization_rpc'):
+            from rpcfit import rpc_fit
+
+            N = 10000
+            rpc = img['rpcm']
+            rand = 2 * np.random.rand(N, 3) - 1
+            lonlatalt = np.stack([
+                rand[:, 0] * rpc.lon_scale + rpc.lon_offset,
+                rand[:, 1] * rpc.lat_scale + rpc.lat_offset,
+                rand[:, 2] * rpc.alt_scale + rpc.alt_offset,
+            ], axis=1)
+
+            target = np.stack(rpc.projection(lonlatalt[:,0], lonlatalt[:,1], lonlatalt[:,2]), axis=1)
+            img['rpcm'] = rpc_fit.calibrate_rpc(target, lonlatalt, init=rpc, orientation='localization')
+
+            # validate the estimated localization rpc
+            rand = 2 * np.random.rand(N, 3) - 1
+            lonlatalt = np.stack([
+                rand[:, 0] * rpc.lon_scale + rpc.lon_offset,
+                rand[:, 1] * rpc.lat_scale + rpc.lat_offset,
+                rand[:, 2] * rpc.alt_scale + rpc.alt_offset,
+            ], axis=1)
+            target = np.stack(rpc.projection(lonlatalt[:,0], lonlatalt[:,1], lonlatalt[:,2]), axis=1)
+            rmse_err, _, _ = rpc_fit.evaluate_localization(img['rpcm'], lonlatalt, target)
+            print('RPC localization fitting error:', rmse_err)
+
     # verify that an input ROI is defined
     if d.get("full_img"):
         with rasterio.open(d['images'][0]['img'], "r") as f:
