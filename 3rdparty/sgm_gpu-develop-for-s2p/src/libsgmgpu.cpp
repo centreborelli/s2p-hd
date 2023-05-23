@@ -27,7 +27,7 @@ struct sgm_handle {
       : params(params), disp_size(disp_size) {}
 };
 
-sgm_handle *make_sgm_gpu(int disp_size, int P1, int P2, float uniqueness,
+extern "C" sgm_handle *make_sgm_gpu(int disp_size, int P1, int P2, float uniqueness,
                          int num_paths, int min_disp, int LR_max_diff,
                          bool subpixel, bool verbose) {
   ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256,
