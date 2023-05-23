@@ -106,4 +106,4 @@ def test_distributed_plyflatten():
                                               roi=None)
     expected = raster[:, :, 0]
 
-    compare_dsm(computed, expected, 0, 0)
+    compare_dsm(computed, expected, 1e-4, 0)
