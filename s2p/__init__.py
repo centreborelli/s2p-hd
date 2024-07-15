@@ -566,7 +566,7 @@ def plys_to_dsm(cfg, tile: Tile) -> None:
             clouds.append(nply)
 
     # this option controls the type of aggregation
-    # TODO: this interface is VERY ugly and will be reworked within a new plyflatten
+    # TODO: this interface is VERY VERY ugly AND FRAGILE and will be reworked within a new plyflatten
     use_max_aggregation = cfg['dsm_aggregation_with_max']
     raster, profile = plyflatten_from_plyfiles_list(clouds,
                                                     resolution=r,
@@ -578,18 +578,30 @@ def plys_to_dsm(cfg, tile: Tile) -> None:
 
     # save output image with utm georeferencing
     if use_max_aggregation:
-        # the raster channel where the max is stored is #4
-        common.rasterio_write(out_dsm, raster[:, :, 4], profile=profile)
+        if (raster.shape[-1] % 5) == 0:
+            # the raster channel where the max is stored is #5
+            common.rasterio_write(out_dsm, raster[:, :, 5], profile=profile)
+
+            # export confidence (optional)
+            # note that the plys are assumed to contain the fields:
+            # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
+            # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
+            common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
+
+        else:
+            common.rasterio_write(out_dsm, raster[:, :, 4], profile=profile)
+
     else:
         common.rasterio_write(out_dsm, raster[:, :, 0], profile=profile)
 
+        # export confidence (optional)
+        # note that the plys are assumed to contain the fields:
+        # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
+        # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
+        if raster.shape[-1] == 5:
+            common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
 
-    # export confidence (optional)
-    # note that the plys are assumed to contain the fields:
-    # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
-    # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
-    if raster.shape[-1] == 5:
-        common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
+
 
     # fill the small gaps in the dsm
     if maxsize := cfg['fill_dsm_holes_smaller_than']:
