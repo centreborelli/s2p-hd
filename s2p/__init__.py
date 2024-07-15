@@ -578,28 +578,23 @@ def plys_to_dsm(cfg, tile: Tile) -> None:
 
     # save output image with utm georeferencing
     if use_max_aggregation:
+        # the raster channel where the max is stored is #5 or #4 depending on the presence of the confidence
         if (raster.shape[-1] % 5) == 0:
-            # the raster channel where the max is stored is #5
-            common.rasterio_write(out_dsm, raster[:, :, 5], profile=profile)
-
-            # export confidence (optional)
-            # note that the plys are assumed to contain the fields:
-            # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
-            # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
-            common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
-
-        else:
-            common.rasterio_write(out_dsm, raster[:, :, 4], profile=profile)
-
+            dsm = raster[:, :, 5]
+        else: 
+            dsm = raster[:, :, 4]
     else:
-        common.rasterio_write(out_dsm, raster[:, :, 0], profile=profile)
+        # the average raster is stored in #0
+        dsm = raster[:, :, 0]
 
-        # export confidence (optional)
-        # note that the plys are assumed to contain the fields:
-        # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
-        # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
-        if raster.shape[-1] == 5:
-            common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
+    common.rasterio_write(out_dsm, dsm, profile=profile)
+
+    # export confidence (optional)
+    # note that the plys are assumed to contain the fields:
+    # [x(float32), y(float32), z(float32), r(uint8), g(uint8), b(uint8), confidence(optional, float32)]
+    # so the raster has 4 or 5 columns: [z, r, g, b, confidence (optional)]
+    if raster.shape[-1] == 5:
+        common.rasterio_write(out_conf, raster[:, :, 4], profile=profile)
 
 
 
@@ -607,8 +602,6 @@ def plys_to_dsm(cfg, tile: Tile) -> None:
     if maxsize := cfg['fill_dsm_holes_smaller_than']:
         import s2p.demtk
         from s2p.specklefilter import specklefilter
-
-        dsm = raster[..., 0]
 
         # compute the mask where the interpolation will not be applied
         # (masked_nans is a mask of large connected components)
