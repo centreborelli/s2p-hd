@@ -51,9 +51,9 @@ On macOS:
 
     brew install fftw libtiff
 
-If lacking administrative privedges to run `sudo`, all these dependencies exist as conda 
-packages and can be installed in a user directory. Then the path to them can be specified
-in the s2p makefiles if compiling it from source. 
+If lacking administrative privedges to run `sudo`, all these dependencies exist
+as conda packages and can be installed in a user directory. Then the path to
+them can be specified in the s2p makefiles if compiling it from source.
 
 # Installation
 
@@ -62,9 +62,13 @@ in the s2p makefiles if compiling it from source.
 Alternatively, if you want to get the latest commit or want to edit the
 sources, install it in editable mode from a git clone:
 
-    git clone https://github.com/centreborelli/s2p.git 
+    git clone https://github.com/centreborelli/s2p.git
     cd s2p
     pip install -e ".[test]"
+
+You can also run s2p without installing it, directly from the source tree:
+
+   PYTHONPATH=. python utils/main.py -h
 
 Some python rely on external binaries. Most of these binaries
 were written on purpose for the needs of the pipeline, and their source code is
@@ -85,19 +89,20 @@ data is not correctly downloaded.  You can force its download by running
 
     pyproj sync -v --file us_nga_egm96_15
 
-If some libraries needed by `s2p` (such as `libfftw3`) are installed in a custom location,
-for example `/usr/joe/local`, then the compilation and tests will fail with exit status 127
-or mentioning not being able to load shared  libaries.  You can help the compiler to find
-these libraries by defining the following variables:
+If some libraries needed by `s2p` (such as `libfftw3`) are installed in a
+custom location, for example `/usr/joe/local`, then the compilation and tests
+will fail with exit status 127 or mentioning not being able to load shared
+libaries.  You can help the compiler to find these libraries by defining the
+following variables:
 
     export CPATH=/usr/joe/local/include
     export LIBRARY_PATH=/usr/joe/local/lib
-    
+
 The following invocation can be used then on Linux:
 
     LD_LIBRARY_PATH=/usr/joe/local/lib make test
 
-and the same for the `s2p` command later. One macOS one may use instead 
+and the same for the `s2p` command later. One macOS one may use instead
 `DYLD_FALLBACK_LIBRARY_PATH`.
 
 ## Docker image (old)
