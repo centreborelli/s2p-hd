@@ -98,7 +98,7 @@ sgm_gpu:
 # rules to build the programs under the source directory
 #
 
-SRCIIO   = morsi cldmask remove_small_cc
+SRCIIO   = morsi cldmask remove_small_cc colormeshgeo ijmesh2
 
 PROGRAMS = $(addprefix bin/,$(SRCIIO))
 
@@ -110,12 +110,16 @@ c/%.o : c/%.c
 	$(CC) -fpic $(CFLAGS) -c $< -o $@
 
 # generic rule for building binary objects from C++ sources
-c/%.o: c/%.cpp
+c/%.o: c/%.cc
 	$(CXX) -fpic $(CXXFLAGS) -c $^ -o $@
 
 # generic rule to build most imscript binaries
 bin/% : c/%.o c/iio.o
 	$(CC) $^ -o $@ $(IIOLIBS)
+
+# this particular program combines different objects in a non-standard way
+bin/colormeshgeo: c/colormeshgeo.o c/iio.o c/rpc.o c/geographiclib_wrapper.o
+	$(CC) $^ $(IIOLIBS) -lstdc++ -lGeographic -o $@
 
 
 #
