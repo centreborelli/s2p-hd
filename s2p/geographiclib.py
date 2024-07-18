@@ -221,8 +221,8 @@ def crs_bbx(ll_poly, crs=None, align=None):
         crs = pyproj_crs(epsg)
 
     # convert lon lat polygon to target CRS
-    easting, northing = pyproj.transform(pyproj.Proj(init="epsg:4326"),
-                                         crs, ll_poly[:, 0], ll_poly[:, 1])
+    transformer = pyproj.Transformer.from_crs("epsg:4326", crs, always_xy=True)
+    easting, northing = transformer.transform(ll_poly[:, 0], ll_poly[:, 1])
 
     # CRS bounding box
     left = min(easting)
