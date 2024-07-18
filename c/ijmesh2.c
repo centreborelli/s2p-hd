@@ -1,10 +1,24 @@
-// basic behavior: build a mesh from a dsm "ijmes2 dsm > ply"
+// basic behavior: build a mesh from a dsm
+// 	ijmesh2 dsm.tif > ply
+//
+// option: set a resolution (in gsm units)
+// 	ijmesh2 dsm.tif -r 0.37 > ply
 //
 // option: colorize using corresponding colors (of same size as the dsm)
-// option: colorize using georeferencing data and sat image (with rpc)
-// option: filter "long" triangles
-// option: filter by connected component size
+// 	ijmesh2 dsm.tif -k msi.png > ply
 //
+// option: colorize using georeferencing data and sat image (with rpc)
+// 	ijmesh2 dsm.tif -c msi.tif -l msi.rpc > ply
+//
+// option: filter "long" triangles
+// 	ijmesh2 dsm.tif -f 20 > ply
+//
+// option: filter by connected component size
+// 	ijmesh2 dsm.tif -s 100 > ply
+//
+// option: change orientation of the second axis
+// 	ijmes dsm.tif -i > ply
+
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
@@ -16,37 +30,50 @@
 #include "pickopt.c"
 int main(int c, char *v[])
 {
-	// process input arguments
-	if (c != 3) {
-		fprintf(stderr, "usage:\n\t%s [-i] colors heights > ply\n", *v);
-		//                          0      1      2
-		return 1;
-	}
-	char *fname_colors = v[1];
-	char *fname_heights = v[2];
+	// extract named arguments
+	float resolution = atof(pick_option(&c, &v, "r", "1"));
+	float filterlong = atof(pick_option(&c, &v, "f", "inf"));
+	float filterwide = atof(pick_option(&c, &v, "s", "inf"));
+	char *fname_kolors = pick_option(&c, &v, "k", "");
+	char *fname_colors = pick_option(&c, &v, "c", "");
+	char *fname_rpc = pick_option(&c, &v, "l", "");
 	_Bool option_i = pick_option(&c, &v, "i", NULL);
 
-	// read input images
-	int w, h, pd, ww, hh;
-	float *heights = iio_read_image_float(fname_heights, &ww, &hh);
-	uint8_t *colors;
+	// prositional arguments
+	if (c != 2)
+		return fprintf(stderr, "usage:\n\t%s heights > ply\n", *v);
+		//                          0 1
+	char *fname_heights = v[1];
+
+	// read input dsm
+	int w, h;
+	float *heights = iio_read_image_float(fname_heights, &w, &h);
+
+	// if requested, read registered colors
+	float *kolors = NULL;
+	int ww, hh, pd = 0;
 	if (0 == strcmp(fname_colors, "WHITE")) {
 		pd = 1;
-		w = ww; h = hh;
-		colors = malloc(w * h);
-		memset(colors, 255, w * h);
-	} else {
-		colors= iio_read_image_uint8_vec(fname_colors, &w, &h, &pd);
+		ww = w; hh = h;
+		kolors = malloc(w * h * sizeof*kolors);
+		for (int i = 0; i < w*h; i++)
+			kolors[i] = 255;
+	} else if (*fname_kolors) {
+		kolors = iio_read_image_float_vec(fname_colors, &w, &h, &pd);
+		if (w != ww || h != hh)
+			exit(fprintf(stderr,"colors and dsm size mismatch"));
+		if (pd != 1 && pd != 3)
+			exit(fprintf(stderr,"expecting a gray or color image"));
 	}
-	if (w != ww || h != hh)
-		return fprintf(stderr, "color and height image size mismatch");
-	if (pd != 1 && pd != 3)
-		return fprintf(stderr, "expecting a gray or color image");
+
+	// not implemented, colors from localized sat image
+	// ...
+	void *colors = NULL;
 
 	// assign comfortable pointers
-	uint8_t (*color)[w][pd] = (void*)colors;
-	float (*height)[w] = (void*)heights;
-	int (*vid)[w] = malloc(w*h*sizeof(int));
+	uint8_t (*kolor)[w][pd] = (void*)kolors;  // projected color image
+	float (*height)[w] = (void*)heights;      // height image
+	int (*vid)[w] = malloc(w*h*sizeof(int));  // vertex indices
 
 	// count number of valid vertices
 	int nvertices = 0;
@@ -57,7 +84,7 @@ int main(int c, char *v[])
 		else
 			vid[j][i] = -1;
 
-	// count number of valid faces
+	// count number of valid faces (may decrease later when whe filter it
 	int nfaces = 0;
 	for (int j = 0; j < h-1; j++)
 	for (int i = 0; i < w-1; i++)
@@ -67,21 +94,25 @@ int main(int c, char *v[])
 			nfaces += 1;
 	}
 
-	// print header
+	// print ply header
 	printf("ply\n");
 	printf("format ascii 1.0\n");
 	//printf("format binary_little_endian 1.0\n");
-	printf("comment created by cutrecombine\n");
+	printf("comment created by ijmesh2\n");
 	printf("element vertex %d\n", nvertices);
 	printf("property float x\n");
 	printf("property float y\n");
 	printf("property float z\n");
-	printf("property uchar red\n");
-	printf("property uchar green\n");
-	printf("property uchar blue\n");
+	if (kolors || colors) {
+		printf("property uchar red\n");
+		printf("property uchar green\n");
+		printf("property uchar blue\n");
+	}
 	printf("element face %d\n", nfaces);
 	printf("property list uchar int vertex_index\n");
 	printf("end_header\n");
+
+
 	int cx;
 
 	// output vertices
@@ -90,13 +121,18 @@ int main(int c, char *v[])
 	for (int i = 0; i < w; i++)
 	{
 		if (!isfinite(height[j][i])) continue;
-		uint8_t rgb[3];
-		for (int k = 0; k < pd; k++) rgb[k] = color[j][i][k];
-		for (int k = pd; k < 3; k++) rgb[k] = rgb[k-1];
-		double xyz[3] = {i, j, height[j][i]};
-		if (option_i) j *= -1;
-		printf("%.16lf %.16lf %.16lf %d %d %d\n",
-				xyz[0], xyz[1], xyz[2], rgb[0], rgb[1], rgb[2]);
+		uint8_t rgb[3] = {255, 0, 255};
+		if (kolors)
+		{
+			for (int k = 0; k < pd; k++) rgb[k] = kolor[j][i][k];
+			for (int k = pd; k < 3; k++) rgb[k] = rgb[k-1];
+		}
+		double xyz[3] = {i/resolution, j/resolution, height[j][i]};
+		//if (option_i) xyz[1] *= -1;
+		printf("%.16lf %.16lf %.16lf", xyz[1], -xyz[0], xyz[2]);
+		if (kolors)
+			printf("%d %d %d\n", rgb[0], rgb[1], rgb[2]);
+		printf("\n");
 		cx += 1;
 	}
 	assert(cx == nvertices);
