@@ -2,7 +2,7 @@ include README.md
 include makefile
 
 # c/
-recursive-include c *.c *.h
+recursive-include c *.c *.h *.cc
 
 # 3rdparty
 
