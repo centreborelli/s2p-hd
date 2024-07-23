@@ -1,0 +1,10 @@
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site1/fusion_heuristicNEW_N50/kmedianslow.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site1/fusion_heuristicNEW_N50/med.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site2/fusion_heuristicNEW_N50/kmedianslow.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site2/fusion_heuristicNEW_N50/med.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site3/fusion_heuristicNEW_N50/kmedianslow.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs_site3/fusion_heuristicNEW_N50/med.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs/fusion_heuristicNEW_N700/kmedianslow.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs/fusion_heuristicNEW_N700/med.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs/fusion_heuristicNEW_N52/kmedianslow.tif
+/home/coco/menthe/home/facciolo/iarpa/all_pairs/fusion_heuristicNEW_N52/med.tif
