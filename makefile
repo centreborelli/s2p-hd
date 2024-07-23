@@ -111,7 +111,7 @@ c/%.o : c/%.c
 
 # generic rule for building binary objects from C++ sources
 c/%.o: c/%.cc
-	$(CXX) -fpic $(CXXFLAGS) -c $^ -o $@
+	$(CXX) -fpic $(CXXFLAGS) -c $< -o $@
 
 # generic rule to build most imscript binaries
 bin/% : c/%.o c/iio.o

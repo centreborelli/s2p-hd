@@ -268,6 +268,7 @@
               libjpeg
               libtiff
               fftw
+              geographiclib
               (with python311Packages; [
                 numpy
                 scipy
