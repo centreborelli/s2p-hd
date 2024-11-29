@@ -5,8 +5,8 @@
 //! Global includes
 #include <cstdlib>
 #include <cmath>
-#include <xmmintrin.h>
-#include <x86intrin.h>
+//#include <xmmintrin.h>
+//#include <x86intrin.h>
 
 
 //! Local includes
@@ -47,11 +47,13 @@ float initForward(
  * @brief Init the forward recursion for spline application.
  *        SSE version.
  **/
+#ifdef USE_SSE
 __m128 initForward(
   const __m128* i_vec,
   const size_t p_step,
   const size_t p_size,
   const double p_z);
+#endif
 
 
 /**
@@ -69,11 +71,13 @@ inline float initBackward(
  * @brief Init the backward recursion for spline application.
  *        SSE version.
  **/
+#ifdef USE_SSE
 inline __m128 initBackward(
   const __m128* i_vec,
   const size_t p_step,
   const size_t p_size,
   const double p_z);
+#endif
 
 
 /**
@@ -92,12 +96,14 @@ void applySpline(
  * @brief Apply the 1D spline interpolation.
  *        SSE version.
  **/
+#ifdef USE_SSE
 void applySpline(
   __m128* io_vec,
   const size_t p_step,
   const size_t p_size,
   const double* z,
   const size_t p_nPoles);
+#endif
 
 
 /**

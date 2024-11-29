@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include <xmmintrin.h>
-#include <x86intrin.h>
+//#include <xmmintrin.h>
+//#include <x86intrin.h>
 
 //! Local includes
 

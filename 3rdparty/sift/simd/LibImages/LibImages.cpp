@@ -10,8 +10,8 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <xmmintrin.h>
-#include <x86intrin.h>
+//#include <xmmintrin.h>
+//#include <x86intrin.h>
 #include <cmath>
 #include <algorithm>
 #include <cstring>

@@ -50,10 +50,11 @@ void prepareSpline(
 
   //! For each channels
   for (size_t c = 0; c < chnls; c++) {
+    size_t i = 0;
 
+#ifdef USE_SSE
     //! Allocation for SSE version
     __m128* vecI = (__m128*) memalloc(16, width * sizeof(__m128));
-    size_t i = 0;
 
     //! Apply the interpolation over the lines - SSE version
     for (; i < height - 4; i += 4) {
@@ -83,15 +84,17 @@ void prepareSpline(
 
     //! Release memory
     memfree(vecI);
+#endif
 
     //! Apply the interpolation over the lines - normal version
     for (; i < height; i++) {
       applySpline(io_im.getPtr(c, i), 1, width, z, nPoles);
     }
+    size_t j = 0;
 
     //! Allocation for SSE version
+#ifdef USE_SSE
     __m128* vecJ = (__m128*) memalloc(16, height * sizeof(__m128));
-    size_t j = 0;
 
     //! Apply the interpolation of the columns - SSE version
     for (; j < width - 4; j += 4) {
@@ -112,6 +115,7 @@ void prepareSpline(
 
     //! Release memory
     memfree(vecJ);
+#endif
 
     //! Apply the interpolation of the columns - normal version
     for (; j < width; j++) {
@@ -158,7 +162,9 @@ void interpolateSpline(
   float cx[6], cy[6];
   initSpline(cx, ux);
   initSpline(cy, uy);
+#ifdef USE_SSE
   const __m128 xx = _mm_set_ps(cx[2], cx[3], cx[4], cx[5]);
+#endif
 
   //! This test saves computational time
   if (xi >= 2 && xi < w - 3 && yi >= 2 && yi < h - 3) {
@@ -172,12 +178,14 @@ void interpolateSpline(
       const float* iI4 = i_im.getPtr(c, yi + 2);
       const float* iI5 = i_im.getPtr(c, yi + 3);
 
+#ifdef USE_SSE
       const __m128 xVal = xx * (_mm_set1_ps(cy[5]) * _mm_loadu_ps(iI0 + xi - 2) +
                                 _mm_set1_ps(cy[4]) * _mm_loadu_ps(iI1 + xi - 2) +
                                 _mm_set1_ps(cy[3]) * _mm_loadu_ps(iI2 + xi - 2) +
                                 _mm_set1_ps(cy[2]) * _mm_loadu_ps(iI3 + xi - 2) +
                                 _mm_set1_ps(cy[1]) * _mm_loadu_ps(iI4 + xi - 2) +
                                 _mm_set1_ps(cy[0]) * _mm_loadu_ps(iI5 + xi - 2));
+#endif
 
       const float value = cy[5] * (iI0[xi + 2] * cx[1] + iI0[xi + 3] * cx[0]) +
                           cy[4] * (iI1[xi + 2] * cx[1] + iI1[xi + 3] * cx[0]) +
@@ -186,9 +194,11 @@ void interpolateSpline(
                           cy[1] * (iI4[xi + 2] * cx[1] + iI4[xi + 3] * cx[0]) +
                           cy[0] * (iI5[xi + 2] * cx[1] + iI5[xi + 3] * cx[0]);
 
+#ifdef USE_SSE
       float tmp[4];
       _mm_storeu_ps(tmp, xVal);
       o_im.getPtr(c, p_i)[p_j] = value + tmp[0] + tmp[1] + tmp[2] + tmp[3];
+#endif
     }
   }
   else {
@@ -274,6 +284,7 @@ void applySpline(
  * @brief Apply the 1D spline interpolation.
  *        SSE version.
  **/
+#ifdef USE_SSE
 void applySpline(
   __m128* io_vec,
   const size_t p_step,
@@ -311,6 +322,7 @@ void applySpline(
     }
   }
 }
+#endif
 
 
 /**
@@ -346,6 +358,7 @@ float initForward(
  * @brief Init the forward recursion for spline application.
  *        and SSE version.
  **/
+#ifdef USE_SSE
 __m128 initForward(
   const __m128* i_vec,
   const size_t p_step,
@@ -369,6 +382,7 @@ __m128 initForward(
   //! Get the result
   return sum / _mm_set1_ps(float(1.0 - zk * zk));
 }
+#endif
 
 
 /**
@@ -388,6 +402,7 @@ inline float initBackward(
  * @brief Init the backward recursion for spline application.
  *        SSE version.
  **/
+#ifdef USE_SSE
 inline __m128 initBackward(
   const __m128* i_vec,
   const size_t p_step,
@@ -397,3 +412,7 @@ inline __m128 initBackward(
   return _mm_set1_ps(float(p_z / (p_z * p_z - 1.0))) * (_mm_set1_ps(float(p_z)) *
     i_vec[p_step * (p_size - 2)] + i_vec[p_step * (p_size - 1)]);
 }
+#endif
+
+
+

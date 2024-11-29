@@ -14,8 +14,8 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <xmmintrin.h>
-#include <x86intrin.h>
+//#include <xmmintrin.h>
+//#include <x86intrin.h>
 #include <cmath>
 #include <algorithm>
 #include <cstring>
@@ -554,6 +554,7 @@ void Image::convolveGaussian(
 
       //! Apply the convolution - SSE version
       int j = 0;
+#ifdef USE_SSE
       for (; j < w - 4; j += 4) {
         __m128 value = _mm_setzero_ps();
 
@@ -571,6 +572,7 @@ void Image::convolveGaussian(
         }
         _mm_storeu_ps(iI + j, value);
       }
+#endif
 
       //! Normal version
       for (; j < w; j++) {
@@ -588,11 +590,12 @@ void Image::convolveGaussian(
     //! Release memory
     memfree(line);
 
-    //! Buffer allocation
+    int j = 0;
+#ifdef USE_SSE
+    //! Buffer allocation SSE Version
     __m128* xCol = (__m128*) memalloc(16, (2 * kHalf + h) * sizeof(__m128));
 
     //! Vertical convolution - SSE version
-    int j = 0;
     for (; j < w - 4; j += 4) {
 
       //! Copy the line into a buffer
@@ -632,6 +635,7 @@ void Image::convolveGaussian(
 
     //! Release memory
     memfree(xCol);
+#endif
 
     //! Buffer allocation
     float* col = (float*) memalloc(16, (2 * kHalf + h) * sizeof(float));
