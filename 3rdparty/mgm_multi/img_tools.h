@@ -231,7 +231,7 @@ inline struct Img median_filter(struct Img const& u, int radius) {
             std::nth_element(v.begin(), v.begin()+v.size()/2, v.end());
             M.val(x,y,k) = v[v.size()/2];
           }
-          
+
         }
       }
     }

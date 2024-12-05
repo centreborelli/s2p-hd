@@ -92,8 +92,8 @@ def pointing_correction(cfg, tile: Tile, i) -> bool:
         return True  ## success
     except Exception:
         # pointing accuracy can fail because one of the images is empty
-        # in this case, we return success = False and the tile will be removed 
-        # from the pipeline 
+        # in this case, we return success = False and the tile will be removed
+        # from the pipeline
         logger.error('pointing_accuracy.compute_correction has failed: tile: {} {}'.format(*tile.coordinates[0:2]))
 
         return False ## not success
@@ -386,7 +386,7 @@ def disparity_to_ply(cfg, tile: Tile) -> None:
     valid_in = np.sum(np.all(np.isfinite(xyz_array.reshape(-1, 3)), axis=1))
     if gsd_radius  and  fillfactor:
         r = gsd_radius * cfg['gsd']    # compute radius in meters
-        n = int(fillfactor * 2*3.14*gsd_radius**2)  # fraction of the disk 
+        n = int(fillfactor * 2*3.14*gsd_radius**2)  # fraction of the disk
         triangulation.filter_xyz(xyz_array, r, n, cfg['gsd'])
 
     # check result
@@ -508,7 +508,7 @@ def heights_to_ply(cfg, tile: Tile) -> None:
     fillfactor = cfg['3d_filtering_fill_factor']
     if gsd_radius  and  fillfactor:
         r = gsd_radius * cfg['gsd']    # compute radius in meters
-        n = int(fillfactor * 2*3.14*gsd_radius**2)  # fraction of the disk 
+        n = int(fillfactor * 2*3.14*gsd_radius**2)  # fraction of the disk
         triangulation.filter_xyz(xyz_array, r, n, cfg['gsd'])
 
 
@@ -581,7 +581,7 @@ def plys_to_dsm(cfg, tile: Tile) -> None:
         # the raster channel where the max is stored is #5 or #4 depending on the presence of the confidence
         if (raster.shape[-1] % 5) == 0:
             dsm = raster[:, :, 5]
-        else: 
+        else:
             dsm = raster[:, :, 4]
     else:
         # the average raster is stored in #0

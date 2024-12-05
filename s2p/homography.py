@@ -92,3 +92,12 @@ def points_apply_homography(H, pts):
     # normalize the homogeneous result and trim the extra dimension
     Hpts = Hpts * (1.0 / np.tile(Hpts[:, 2], (3, 1))).T
     return Hpts[:, 0:2]
+
+
+
+
+
+
+
+
+

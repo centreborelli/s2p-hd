@@ -21,10 +21,10 @@ static void connected_component_filter(int *rep, int w, int h, float *in, float 
          int p0 = j*w + i;
          int p1 = j*w + i+1;
          int p2  = (j+1)*w + i;
-         if (rep[p0] >= 0 && rep[p1] >= 0 && 
+         if (rep[p0] >= 0 && rep[p1] >= 0 &&
              fabs(in[p0] - in[p1]) < intensity_threshold)
-            adsf_union(rep, w*h, p0, p1); 
-         if (rep[p0] >= 0 && rep[p2] >= 0 && 
+            adsf_union(rep, w*h, p0, p1);
+         if (rep[p0] >= 0 && rep[p2] >= 0 &&
              fabs(in[p0] - in[p2]) < intensity_threshold)
             adsf_union(rep, w*h, p0, p2);
 
