@@ -44,6 +44,10 @@
 #define I_CAN_POSIX
 #define I_CAN_LINUX
 
+// internal shit
+#define IIO_MAX_DIMENSION 20
+
+
 //
 // enum-like, only used internally
 //
@@ -142,7 +146,7 @@
 #include <stdarg.h>
 #include <libgen.h> // needed for dirname() multi-platform
 
-#ifdef __MINGW32__ // needed for tmpfile(), this flag is also set by MINGW64 
+#ifdef __MINGW32__ // needed for tmpfile(), this flag is also set by MINGW64
 #include <windows.h>
 #endif
 
@@ -489,7 +493,9 @@ int iio_type_id(size_t sample_size, bool ieeefp_sample, bool signed_sample)
 		switch(sample_size) {
 		case sizeof(float):       return IIO_TYPE_FLOAT;
 		case sizeof(double):      return IIO_TYPE_DOUBLE;
+#ifdef I_CAN_HAS_LONGDOUBLE
 		case sizeof(long double): return IIO_TYPE_LONGDOUBLE;
+#endif
 		case sizeof(float)/2:     return IIO_TYPE_HALF;
 		default: fail("bad float size %zu", sample_size);
 		}
@@ -1490,7 +1496,7 @@ static int read_whole_tiff(struct iio_image *x, const char *filename)
 			int L = l, Spp = spp;
 			if (broken) {
 				TIFFReadTile(tif, tbuf, tx, ty, 0, l);
-				L = 0; 
+				L = 0;
 				Spp = 1;
 			}
 			for (uint32_t j = 0; j < tilelength; j++)
@@ -2519,7 +2525,7 @@ static int read_beheaded_ffd(struct iio_image *x,
 // with name "RAW[...]:file.xxx".  The "..." specify the
 // details of the raw format.
 //
-// 
+//
 // Example:
 //
 // RAW[w320,h200,tFLOAT]:file.xxx
