@@ -42,8 +42,12 @@ void runHomography(
   }
 
   //! Apply the homography
+  // S2PHD
   bool useAntiAliasing = p_params.antiAliasing();
   mapImage(i_im, i_mat, o_im, p_params.verbose(), adjustSize, useAntiAliasing);
+
+  // HOMOGRAPHY
+//  mapImage(i_im, i_mat, o_im, p_params.verbose(), adjustSize);
 }
 
 

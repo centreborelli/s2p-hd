@@ -52,7 +52,7 @@ void prepareSpline(
   for (size_t c = 0; c < chnls; c++) {
     size_t i = 0;
 
-#ifdef USE_SSE
+#ifdef USE_SSE  
     //! Allocation for SSE version
     __m128* vecI = (__m128*) memalloc(16, width * sizeof(__m128));
 
@@ -90,10 +90,10 @@ void prepareSpline(
     for (; i < height; i++) {
       applySpline(io_im.getPtr(c, i), 1, width, z, nPoles);
     }
-    size_t j = 0;
 
+    size_t j = 0;
+#ifdef USE_SSE  
     //! Allocation for SSE version
-#ifdef USE_SSE
     __m128* vecJ = (__m128*) memalloc(16, height * sizeof(__m128));
 
     //! Apply the interpolation of the columns - SSE version
@@ -115,8 +115,8 @@ void prepareSpline(
 
     //! Release memory
     memfree(vecJ);
-#endif
 
+#endif
     //! Apply the interpolation of the columns - normal version
     for (; j < width; j++) {
       applySpline(io_im.getPtr(c, 0) + j, width, height, z, nPoles);
@@ -162,11 +162,11 @@ void interpolateSpline(
   float cx[6], cy[6];
   initSpline(cx, ux);
   initSpline(cy, uy);
-#ifdef USE_SSE
+#ifdef USE_SSE  
   const __m128 xx = _mm_set_ps(cx[2], cx[3], cx[4], cx[5]);
-#endif
 
-  //! This test saves computational time
+  //! This test saves computational time 
+  // but breaks everything on mac !
   if (xi >= 2 && xi < w - 3 && yi >= 2 && yi < h - 3) {
 
     for (size_t c = 0; c < chnls; c++) {
@@ -178,14 +178,12 @@ void interpolateSpline(
       const float* iI4 = i_im.getPtr(c, yi + 2);
       const float* iI5 = i_im.getPtr(c, yi + 3);
 
-#ifdef USE_SSE
       const __m128 xVal = xx * (_mm_set1_ps(cy[5]) * _mm_loadu_ps(iI0 + xi - 2) +
                                 _mm_set1_ps(cy[4]) * _mm_loadu_ps(iI1 + xi - 2) +
                                 _mm_set1_ps(cy[3]) * _mm_loadu_ps(iI2 + xi - 2) +
                                 _mm_set1_ps(cy[2]) * _mm_loadu_ps(iI3 + xi - 2) +
                                 _mm_set1_ps(cy[1]) * _mm_loadu_ps(iI4 + xi - 2) +
                                 _mm_set1_ps(cy[0]) * _mm_loadu_ps(iI5 + xi - 2));
-#endif
 
       const float value = cy[5] * (iI0[xi + 2] * cx[1] + iI0[xi + 3] * cx[0]) +
                           cy[4] * (iI1[xi + 2] * cx[1] + iI1[xi + 3] * cx[0]) +
@@ -194,11 +192,9 @@ void interpolateSpline(
                           cy[1] * (iI4[xi + 2] * cx[1] + iI4[xi + 3] * cx[0]) +
                           cy[0] * (iI5[xi + 2] * cx[1] + iI5[xi + 3] * cx[0]);
 
-#ifdef USE_SSE
       float tmp[4];
       _mm_storeu_ps(tmp, xVal);
       o_im.getPtr(c, p_i)[p_j] = value + tmp[0] + tmp[1] + tmp[2] + tmp[3];
-#endif
     }
   }
   else {
@@ -217,6 +213,22 @@ void interpolateSpline(
       }
       o_im.getPtr(c, p_i)[p_j] = value;
     }
+  }
+#endif
+  for (size_t c = 0; c < chnls; c++) {
+    float value = 0.f;
+
+    for (int di = -2; di <= 3; di++) {
+      const float* iI = i_im.getPtr(c, yi + di <  0 ? -yi - di - 1 :
+                                       yi + di >= h ? 2 * h - yi - di - 1 : yi + di);
+      value += cy[3 - di] * (iI[symi(xi - 2, w)] * cx[5] +
+                             iI[symi(xi - 1, w)] * cx[4] +
+                             iI[symi(xi    , w)] * cx[3] +
+                             iI[symi(xi + 1, w)] * cx[2] +
+                             iI[symi(xi + 2, w)] * cx[1] +
+                             iI[symi(xi + 3, w)] * cx[0]);
+    }
+    o_im.getPtr(c, p_i)[p_j] = value;
   }
 }
 
@@ -280,11 +292,11 @@ void applySpline(
 }
 
 
+#ifdef USE_SSE
 /**
  * @brief Apply the 1D spline interpolation.
  *        SSE version.
  **/
-#ifdef USE_SSE
 void applySpline(
   __m128* io_vec,
   const size_t p_step,
@@ -354,11 +366,11 @@ float initForward(
 }
 
 
+#ifdef USE_SSE
 /**
  * @brief Init the forward recursion for spline application.
  *        and SSE version.
  **/
-#ifdef USE_SSE
 __m128 initForward(
   const __m128* i_vec,
   const size_t p_step,
@@ -398,11 +410,12 @@ inline float initBackward(
   return float(p_z / (p_z * p_z - 1.0)) * (float(p_z) *
     i_vec[p_step * (p_size - 2)] + i_vec[p_step * (p_size - 1)]);
 }
+
+#ifdef USE_SSE
 /**
  * @brief Init the backward recursion for spline application.
  *        SSE version.
  **/
-#ifdef USE_SSE
 inline __m128 initBackward(
   const __m128* i_vec,
   const size_t p_step,
@@ -413,6 +426,3 @@ inline __m128 initBackward(
     i_vec[p_step * (p_size - 2)] + i_vec[p_step * (p_size - 1)]);
 }
 #endif
-
-
-

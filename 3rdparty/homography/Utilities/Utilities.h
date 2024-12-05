@@ -8,8 +8,10 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-//#include <xmmintrin.h>
-//#include <x86intrin.h>
+#ifdef USE_SSE
+#include <xmmintrin.h>
+#include <x86intrin.h>
+#endif
 #include <vector>
 
 

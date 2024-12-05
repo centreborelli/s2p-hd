@@ -153,7 +153,7 @@ class Parameters {
     size_t m_oWidth;     // Width of the output image          -c [%d]
     size_t m_oHeight;    // Height of the output image         -l [%d]
     bool   m_verbose;    // Activate the verbose mode          -v
-    bool   m_antiAliasing;
+    bool m_antiAliasing;
 };
 #else
 class Parameters;
