@@ -676,7 +676,7 @@ void Image::convolveGaussian(
           value += kernel[k] * col[i + k];
         }
 
-        //col[i] = value;
+        col[i] = value;
         //! Get the value
         this->getPtr(c, i)[j] = col[i];
       }
