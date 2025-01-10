@@ -121,7 +121,15 @@ def compute_satellite_direction(imfile, xyz):
     n /= norm(n)
     return n
 
-
+if __name__ == "__main__":
+    from sys import argv
+    if len(argv) != 4:
+        print(f"usage: {argv[0]} xyz colors outmesh")
+        exit(1)
+    filename_xyz = argv[1]
+    filename_colors = argv[2]
+    filename_mesh = argv[3]
+    ...
 
 
 
