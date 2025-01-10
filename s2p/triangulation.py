@@ -9,6 +9,7 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 from scipy import ndimage
 import rasterio
+import iio
 
 from s2p import common
 from s2p import ply
@@ -372,13 +373,21 @@ def write_to_ply(path_to_ply_file, xyz, colors=None, proj_com='', confidence='')
         confidence (str): path to an image containig a confidence map, optional
     """
     # flatten the xyz array into a list and remove nan points
+    np.save('/tmp/xyz.npy', xyz)
     xyz_list = xyz.reshape(-1, 3)
     valid = np.all(np.isfinite(xyz_list), axis=1)
 
     if colors is not None:
+        np.save('/tmp/colors.npy', colors)
         colors_list = colors.transpose(1, 2, 0).reshape(-1, colors.shape[0])[valid]
+        i, j = np.meshgrid(range(colors.shape[2]), range(colors.shape[1]))
+        i = i.flatten()[valid]
+        j = j.flatten()[valid]
+        np.save('/tmp/ply.npy', np.concatenate((xyz_list[valid], colors_list,
+                        i.reshape(-1,1), j.reshape(-1,1)), axis=1))
     else:
         colors_list = None
+
 
     # read extra field (confidence) if present
     if confidence != '':
