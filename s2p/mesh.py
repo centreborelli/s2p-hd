@@ -204,10 +204,14 @@ def main(filename_mesh, xyz, colours=None, offset=[0., 0., 0.], filename_rpc=Non
     write_mesh_to_coloured_ply(filename_mesh, vertices, faces, c=colours, offset=offset)
     return
 
+def pick_option(o, d):
+	from sys import argv as v
+	if int == type(o): return v[o]
+	return type(d)(v[v.index(o)+1]) if o in v else d
 
 if __name__ == "__main__":
     from sys import argv
-    if len(argv) != 4:
+    if len(argv) < 4:
         print(f"usage: {argv[0]} xyz colours outmesh")
         exit(1)
     filename_xyz = argv[1]
@@ -218,7 +222,10 @@ if __name__ == "__main__":
     # TODO: use filtering step (new args: filename_rpc and threshold)
     # TODO: use offset when writing the mesh (use offset=vertices[0] ?)
     # TODO: accept other input formats (tiff for colours in particular)
-    main(filename_mesh, xyz, colours)
+    ox = pick_option("-ox", 0)
+    oy = pick_option("-oy", 0)
+    ot = pick_option("-t", 0.15)
+    main(filename_mesh, xyz, colours, offset=[ox,oy,0], t=ot)
 
 
 
