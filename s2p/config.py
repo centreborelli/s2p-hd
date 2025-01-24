@@ -194,6 +194,8 @@ def get_default_config() -> dict:
     cfg['3d_filtering_radius_gsd'] = None  # radius of the sphere as number of GSDs : usually set to 3 or 5
     cfg['3d_filtering_fill_factor'] = None  # number of points as fraction of the disk for the given radius : usually set to 1/3 or 1/4
 
+    # whether to produce a colored output mesh for every tile
+    cfg['do_mesh'] = False
 
     # clean height maps outliers
     cfg['cargarse_basura'] = True

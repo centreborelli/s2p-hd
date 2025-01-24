@@ -396,7 +396,7 @@ def disparity_to_ply(cfg, tile: Tile) -> None:
 
     proj_com = "CRS {}".format(cfg['out_crs'])
     try:
-        triangulation.write_to_ply(ply_file, xyz_array, colors, proj_com, confidence=extra)
+        triangulation.write_to_ply(cfg, ply_file, xyz_array, colors, proj_com, confidence=extra)
     except Exception:
         logger.error('triangulation.write_to_ply has failed: tile: {} {}'.format(*tile.coordinates[0:2]))
 
@@ -513,7 +513,7 @@ def heights_to_ply(cfg, tile: Tile) -> None:
 
 
     proj_com = "CRS {}".format(cfg['out_crs'])
-    triangulation.write_to_ply(plyfile, xyz_array, colors, proj_com)
+    triangulation.write_to_ply(cfg, plyfile, xyz_array, colors, proj_com)
 
     if cfg['clean_intermediate']:
         common.remove(height_map)

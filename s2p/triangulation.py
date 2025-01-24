@@ -9,7 +9,7 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 from scipy import ndimage
 import rasterio
-import iio
+#import iio
 
 from s2p import common
 from s2p import ply
@@ -360,7 +360,7 @@ def height_map(x, y, w, h, rpc1, rpc2, H1, H2, disp, mask, mask_orig, A=None):
     return out
 
 
-def write_to_ply(path_to_ply_file, xyz, colors=None, proj_com='', confidence=''):
+def write_to_ply(cfg, path_to_ply_file, xyz, colors=None, proj_com='', confidence=''):
     """
     Write raster of 3D point coordinates as a 3D point cloud in a .ply file
 
@@ -372,19 +372,28 @@ def write_to_ply(path_to_ply_file, xyz, colors=None, proj_com='', confidence='')
         proj_com (str): projection comment in the .ply file
         confidence (str): path to an image containig a confidence map, optional
     """
+
+    # NOTE XXX TODO
+    # if cfg['do_mesh'], this function writes some additional files
+    # with mesh data on the tile folder (extracted from the `path_to_ply_file`)
+    # this is ugly, because the mesh data could be as well integrated into
+    # the same ply file.
+
     # flatten the xyz array into a list and remove nan points
-    np.save('/tmp/xyz.npy', xyz)
+    if cfg['do_mesh']:
+	    np.save(f"{os.path.dirname(path_to_ply_file)}/xyz.npy", xyz)
     xyz_list = xyz.reshape(-1, 3)
     valid = np.all(np.isfinite(xyz_list), axis=1)
 
     if colors is not None:
-        np.save('/tmp/colors.npy', colors)
+        if cfg['do_mesh']:
+            np.save(f"{os.path.dirname(path_to_ply_file)}/colors.npy", colors)
         colors_list = colors.transpose(1, 2, 0).reshape(-1, colors.shape[0])[valid]
-        i, j = np.meshgrid(range(colors.shape[2]), range(colors.shape[1]))
-        i = i.flatten()[valid]
-        j = j.flatten()[valid]
-        np.save('/tmp/ply.npy', np.concatenate((xyz_list[valid], colors_list,
-                        i.reshape(-1,1), j.reshape(-1,1)), axis=1))
+        #i, j = np.meshgrid(range(colors.shape[2]), range(colors.shape[1]))
+        #i = i.flatten()[valid]
+        #j = j.flatten()[valid]
+        #np.save('/tmp/ply.npy', np.concatenate((xyz_list[valid], colors_list,
+        #                i.reshape(-1,1), j.reshape(-1,1)), axis=1))
     else:
         colors_list = None
 
