@@ -27,3 +27,5 @@ def main():
     # Backup input file for sanity check
     if not args.config.startswith(os.path.abspath(user_cfg['out_dir'] + os.sep)):
         shutil.copy2(args.config,os.path.join(user_cfg['out_dir'], 'config.json.orig'))
+
+if __name__ == "__main__": main()
